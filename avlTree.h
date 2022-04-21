@@ -25,6 +25,7 @@ class AVLTree
 {
 private:
 Ptr<AVLNode<Key,Value,Ptr>> root;
+void rotate(weak_ptr<AVLNode<Key,Value,Ptr>> parent)
     
 public:
 AVLTree<Key, Value, Ptr>() : root(nullptr){}
@@ -34,6 +35,7 @@ void addAVLTree(std::weak_ptr<AVLTree<Key,Value,Ptr>> other_tree);
 Value getValue(Key key);
 template<typename ... Args>
 void inOrder(std::function<void(Args...)> const & func, Args ... as);
+bool isEmpty();
 
 
 };
