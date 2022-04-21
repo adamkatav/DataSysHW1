@@ -1,154 +1,443 @@
-<!DOCTYPE html>
-<html lang="en" dir="LTR" style="height: 100%">
-<head>
+/***************************************************************************/
+/*                                                                         */
+/* 234218 Data Structures 1, Spring-2022                                   */
+/* Homework : Wet 1                                                        */
+/*                                                                         */
+/***************************************************************************/
 
-<meta name="Description" content="The all-in-one site for the students. Here you can view your grades, homeworks, course announcements and courses homepage. It is a part of the WebCourse(tm) and GR++(tm) packages. A service by Yaniv Hamo (tm)">
-<meta name="Keywords" content="GR++, Yaniv Hamo (tm), WebCourse, Yaniv, Hamo, Yaniv Hamo">
-<meta name="Author" content="Yaniv Hamo, Yaniv Hamo (tm)">
-<meta name="Generator" content="Yaniv Hamo (tm)">
-<meta name="Copyright" content="1999 Yaniv Hamo (tm)">
-<meta http-equiv="Cache-Control" content="max-age=900">
+/***************************************************************************/
+/*                                                                         */
+/* File Name : main1.cpp                                                   */
+/*                                                                         */
+/* Holds the "int main()" function and the parser of the shell's           */
+/* command line.                                                           */
+/***************************************************************************/
 
-  <!-- Tell the browser we use UTF-8: (should be first) -->
-  <meta http-equiv="Content-type" content="text/html; charset=utf-8">
+#include <assert.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include "library1.h"
+#include <iostream>
+using namespace std;
 
-  <!-- A work-arround for IE 11 and Edge to ignore compatibility mode (e.g., ignore request to behave as IE 7) -->
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-  <!-- Tiling support for Windows: -->
-  <meta name="msapplication-TileColor" content="#752d75">
-  <meta name="msapplication-square70x70logo" content="tiny.png">
-  <meta name="msapplication-square150x150logo" content="square.png">
-  <meta name="msapplication-wide310x150logo" content="wide.png">
-  <meta name="msapplication-square310x310logo" content="large.png">
-  <link rel="stylesheet" type="text/css" href="/css/gr.css?566">
-  <script src="/js/all.js"></script>
+/***************************************************************************/
+/* helpers                                                                 */
+/***************************************************************************/
+/* we assume maximum string size is not longer than 256  */
+#define MAX_STRING_INPUT_SIZE (255)
+#define MAX_BUFFER_SIZE       (255)
 
-  <title>Grades Login Screen - Web based grades system</title>
+#define StrCmp(Src1,Src2) ( strncmp((Src1),(Src2),strlen(Src1)) == 0 )
 
-<!--Solved img location issues. See https://developer.mozilla.org/en-US/docs/Images,_Tables,_and_Mysterious_Gaps-->
-<style>
-td img {display: block;}
-</style>
+typedef enum {
+    error_free, error
+} errorType;
+static errorType parser(const char* const command);
 
-</head>
-<body class="gr-stud gr-stud-login" onload="document.grform.ID.focus();">
+#define ValidateRead(read_parameters,required_parameters,ErrorString) \
+if ( (read_parameters)!=(required_parameters) ) { printf(ErrorString); return error; }
 
-<div class="top-div">
-<form name="grform" action="/grades.cgi" method="post">
-<div class="main">
-<input type="hidden" name="Login" value="1">
-<input type="hidden" name="Course" value="">
-<input type="hidden" name="Page" value="">
-<input type="hidden" name="SEM" value="">
-<div style="text-align: center; width: 644px; margin-bottom: 0px; margin-top: 2px; background-color: #f0f0f0; border-radius: 25px 25px 0 0; padding: 5px 25px; direction: rtl;">
-<span class="red-text"><strong>You were automatically logged out after 120 minutes<br><img src="/Images/StudImages/spacer.gif" height="5" alt=""></strong></span>
+/* enum to string for return value */
+static const char* ReturnValToStr(int val) {
+    switch (val) {
+        case SUCCESS:
+            return "SUCCESS";
+        case ALLOCATION_ERROR:
+            return "ALLOCATION_ERROR";
+        case FAILURE:
+            return "FAILURE";
+        case INVALID_INPUT:
+            return "INVALID_INPUT";
+        default:
+            return "";
+    }
+}
 
-</div>
-<div class="taub">
-  <div class="taub-top-img">
-      <img src="/Images/StudImages/Taub/top.gif" width="693" height="9" alt="">
-  </div>
-  <div class="taub-top">
-    <span>
-      <img src="/Images/StudImages/Taub/gr%2b%2b.gif" alt="logo of GR++, the E grading solution"><span>
-<label for="ID">Username:</label> <input type="text" size="10" maxlength="250" id="ID" name="ID" value="" required aria-label="username שם משתמש" aria-invalid="false" aria-required="true">
-<label for="password">Password:</label> <input type="password" id="password" name="Password" size="10" maxlength="250" required aria-label="password סיסמה" aria-invalid="false" aria-required="true">
-<input type="submit" class="submit-button" value="proceed" name="submit">
-</span>
-<img src="/Images/StudImages/Taub/rightcorner.gif" alt="">
-    </span>
-  </div>
-  <div>
-      <img src="/Images/StudImages/Taub/images3/1.jpg" width="116" height="97" alt=""><img src="/Images/StudImages/Taub/images3/2.jpg" width="115" height="97" alt=""><img src="/Images/StudImages/Taub/images3/3.jpg" width="116" height="97" alt=""><img src="/Images/StudImages/Taub/images3/4.jpg" width="115" height="97" alt=""><img src="/Images/StudImages/Taub/images3/5.jpg" width="116" height="97" alt=""><img src="/Images/StudImages/Taub/images3/6.jpg" width="115" height="97" alt="">
-  </div>
-  <div>
-      <img src="/Images/StudImages/Taub/images3/7.jpg" width="116" height="97" alt=""><img src="/Images/StudImages/Taub/images3/8.jpg" width="115" height="97" alt=""><img src="/Images/StudImages/Taub/images3/9.jpg" width="116" height="97" alt=""><img src="/Images/StudImages/Taub/images3/10.jpg" width="115" height="97" alt=""><img src="/Images/StudImages/Taub/images3/11.jpg" width="116" height="97" alt=""><img src="/Images/StudImages/Taub/images3/12.jpg" width="115" height="97" alt="">
-  </div>
-  <div>
-      <img src="/Images/StudImages/Taub/images3/13.jpg" width="116" height="97" alt=""><img src="/Images/StudImages/Taub/images3/14.jpg" width="115" height="97" alt=""><img src="/Images/StudImages/Taub/images3/15.jpg" width="116" height="97" alt=""><img src="/Images/StudImages/Taub/images3/16.jpg" width="115" height="97" alt=""><img src="/Images/StudImages/Taub/images3/17.jpg" width="116" height="97" alt=""><img src="/Images/StudImages/Taub/images3/18.jpg" width="115" height="97" alt="">
-  </div>
-  <div>
-      <img src="/Images/StudImages/Taub/images3/19.jpg" width="116" height="97" alt=""><img src="/Images/StudImages/Taub/images3/20.jpg" width="115" height="97" alt=""><img src="/Images/StudImages/Taub/images3/21.jpg" width="116" height="97" alt=""><img src="/Images/StudImages/Taub/images3/22.jpg" width="115" height="97" alt=""><img src="/Images/StudImages/Taub/images3/23.jpg" width="116" height="97" alt=""><img src="/Images/StudImages/Taub/images3/24.jpg" width="115" height="97" alt="">
-  </div>
-  <div>
-      <img src="/Images/StudImages/Taub/images3/25.jpg" width="116" height="97" alt=""><img src="/Images/StudImages/Taub/images3/26.jpg" width="115" height="97" alt=""><img src="/Images/StudImages/Taub/images3/27.jpg" width="116" height="97" alt=""><img src="/Images/StudImages/Taub/images3/28.jpg" width="115" height="97" alt=""><img border="0" src="/Images/StudImages/Taub/images3/29.jpg" width="116" height="97" alt="Yaniv Hamo"><img border="0" src="/Images/StudImages/Taub/images3/30.jpg" width="115" height="97" alt="Yaniv Hamo">
-  </div>
-</div>
-</div>
-</form>
-</div>
-<div style="top: 0px; text-align: center;">
-<center>
-<div style="text-align: left; width: 644px; margin-bottom: 20px; margin-top: 0px; background-color: #f0f0f0; border-radius: 0 0 15px 15px; padding: 5px 25px; direction: rtl; font-size: 12px;">
-<span style="">
-<A HREF="/help.cgi">לעזרה</A> ומידע מפורט איך להיכנס למערכת לחץ <A HREF="/help.cgi">כאן</A>
-</span>
-<span style="float: right; right: 10px; position: relative;">
-<A HREF="https://techwww.technion.ac.il/cgi-bin/newuser/newuser.pl" TARGET="_BLANK">שכחתי סיסמא/החלפת סיסמא/פג תוקף סיסמא</A>
-</span>
-</div>
-
-<div style="text-align: justify; text-justify: inter-word; direction: rtl; width: 600px;">
-
-<center><h1 style="color: brown;">ברוכים הבאים למערכת <FONT DIR="LTR">GR++</FONT></h1></center>
-
-<P><B>הכניסה למערכת זו היא בשימוש בסיסמא הטכניונית האחידה בלבד</B>.
-זו אותה סיסמא כמו של
-t2, tx ו-Upgrade ושל דואל ב-campus.
-זה <B>לא</B> הקוד הסודי (בעל שמונה הספרות שמשמש לפתיחת חשבון ול-Moodle).
-סטודנטים שאינם מצליחים להיכנס יכולים לפנות 
-<a href="http://5600.technion.ac.il/"  target="_new">למוקד תמיכה טכניוני</a>
-או
-בדואל
-ל-<SPAN class="wclink-email" data-edn="pqscs.technion.ac.il" data-eun="ahjwwwb">usaratcs.technion.ac.il</SPAN>.
-אם קיבלתם הודעה על פג תוקף סיסמא, אנא החליפו סיסמא (שירות בדיקת הסיסמא שאנו מקבלים מהטכניון בודק פג תוקף, כך שגם אם במערכות טכניוניות אחרות אתם מסוגלים להשתמש בסיסמא למרות שפג תוקפה לא תוכלו להיכנס למערכת זו ללא שינוי הסיסמא).
-מצורף הסבר
-<a href="https://cis.technion.ac.il/kb/faq/services-identification/%d7%a2%d7%93%d7%9b%d7%95%d7%9f-%d7%95%d7%a9%d7%97%d7%96%d7%95%d7%a8-%d7%a1%d7%99%d7%a1%d7%9e%d7%94-%d7%90%d7%99%d7%a9%d7%99%d7%aa-%d7%91%d7%9e%d7%a7%d7%a8%d7%94-%d7%a9%d7%9c-%d7%a4%d7%a7%d7%99%d7%a2/" target="_new">לגבי עדכון ושחזור סיסמה אישית במקרה של פקיעת תוקף או אובדן.
-</a>
-</P>
+/* Global isInit for running data structure */
+static bool isInit = false;
 
 
+/***************************************************************************/
+/* Exercise Commands                                                       */
+/***************************************************************************/
+
+/* Number of exercise commands */
+static const int numActions = 16;
+
+/* The commands' types */
+typedef enum {
+    NONE_CMD                                = -2,
+    COMMENT_CMD                             = -1,
+    INIT_CMD                                = 0,
+    ADD_COMPANY_CMD                         = 1,
+    ADD_EMPLOYEE_CMD                        = 2,
+    REMOVE_COMPANY_CMD                      = 3,
+    REMOVE_EMPLOYEE_CMD                     = 4,
+    GET_COMPANY_INFO_CMD                    = 5,
+    GET_EMPLOYEE_INFO_CMD                   = 6,
+    INCREASE_COMPANY_VALUE_CMD              = 7,
+    PROMOTE_EMPLOYEE_CMD                    = 8,
+    MOVE_COMPANY_CMD                        = 9,
+    ACQUIRE_COMPANY_CMD                     = 10,
+    GET_HIGHEST_EARNER_CMD                  = 11,
+    GET_ALL_EMPLOYEES_BY_SALARY_CMD         = 12,
+    GET_HIGHEST_EARNER_IN_EACH_COMPANY_CMD  = 13,
+    GET_NUM_EMPLOYEES_MATCHING_CMD          = 14,
+    QUIT_CMD                                = 15
+} commandType;
+
+/* The commands' strings */
+static const char *commandStr[] = {
+    "Init",
+    "AddCompany",
+    "AddEmployee",
+    "RemoveCompany",
+    "RemoveEmployee",
+    "GetCompanyInfo",
+    "GetEmployeeInfo",
+    "IncreaseCompanyValue",
+    "PromoteEmployee",
+    "HireEmployee",
+    "AcquireCompany",
+    "GetHighestEarner",
+    "GetAllEmployeesBySalary",
+    "GetHighestEarnerInEachCompany",
+    "GetNumEmployeesMatching",
+    "Quit" 
+};
+
+/* On-Command Functions */
+static errorType OnInit(void** DS, const char* const command);
+static errorType OnAddCompany(void **DS, const char* const command);
+static errorType OnAddEmployee(void **DS, const char* const command);
+static errorType OnRemoveCompany(void **DS, const char* const command);
+static errorType OnRemoveEmployee(void **DS, const char* const command);
+static errorType OnGetCompanyInfo(void **DS, const char* const command);
+static errorType OnGetEmployeeInfo(void **DS, const char* const command);
+static errorType OnIncreaseCompanyValue(void **DS, const char* const command);
+static errorType OnPromoteEmployee(void **DS, const char* const command);
+static errorType OnHireEmployee(void **DS, const char* const command);
+static errorType OnAcquireCompany(void **DS, const char* const command);
+static errorType OnGetHighestEarner(void **DS, const char* const command);
+static errorType OnGetAllEmployeesBySalary(void **DS, const char* const command);
+static errorType OnGetHighestEarnerInEachCompany(void **DS, const char* const command);
+static errorType OnGetNumEmployeesMatching(void **DS, const char* const command);
+static errorType OnQuit(void** DS, const char* const command);
+
+/* On-Command Function Pointers */
+typedef errorType(*OnFuncPtr)(void**, const char* const);
+static OnFuncPtr OnCmdPtrs[] = {
+    OnInit,
+    OnAddCompany,
+    OnAddEmployee,
+    OnRemoveCompany,
+    OnRemoveEmployee,
+    OnGetCompanyInfo,
+    OnGetEmployeeInfo,
+    OnIncreaseCompanyValue,
+    OnPromoteEmployee,
+    OnHireEmployee,
+    OnAcquireCompany,
+    OnGetHighestEarner,
+    OnGetAllEmployeesBySalary,
+    OnGetHighestEarnerInEachCompany,
+    OnGetNumEmployeesMatching,
+    OnQuit
+};
+
+/***************************************************************************/
+/* main                                                                    */
+/***************************************************************************/
+
+int main(int argc, const char**argv) {
+    char buffer[MAX_STRING_INPUT_SIZE];
+
+    // Reading commands
+    while (fgets(buffer, MAX_STRING_INPUT_SIZE, stdin) != NULL) {
+        fflush(stdout);
+        if (parser(buffer) == error)
+            break;
+    };
+    return 0;
+}
+
+/***************************************************************************/
+/* Command Checker                                                         */
+/***************************************************************************/
+
+static commandType CheckCommand(const char* const command,
+        const char** const command_arg) {
+    if (command == NULL || strlen(command) == 0 || StrCmp("\n", command))
+        return (NONE_CMD);
+    if (StrCmp("#", command)) {
+        if (strlen(command) > 1)
+            printf("%s", command);
+        return (COMMENT_CMD);
+    };
+    for (int index = numActions-1; index>=0; index--) {
+        if (StrCmp(commandStr[index], command)) {
+            *command_arg = command + strlen(commandStr[index]) + 1;
+            return ((commandType) index);
+        };
+    };
+    return (NONE_CMD);
+}
 
 
+/***************************************************************************/
+/* Parser                                                                  */
+/***************************************************************************/
+static errorType parser(const char* const command) {
+    static void *DS = NULL; /* The general data structure */
+    const char* command_args = NULL;
+    errorType rtn_val = error;
+    commandType command_val = CheckCommand(command, &command_args);
+    if ((command_val >= INIT_CMD) && (command_val <= QUIT_CMD)) {
+        rtn_val = OnCmdPtrs[command_val](&DS, command_args);
+    } else if (command_val == COMMENT_CMD) {
+        rtn_val = error_free;
+    } else if (command_val == NONE_CMD) {
+        rtn_val = error;
+    } else {
+        assert(false);
+    }
+    return (rtn_val);
+}
 
-<P>הכניסה למערכת מותרת רק למשתמשים החוקיים. אין להשתמש בסקריפטים או מערכות אוטומטיות לכניסה למערכת, ואין לאפשר כניסה לשום גורם שאינו בעל החשבון עצמו.
-</P>
-</div>
+/************************************************************************/
+/* OnInit                                                               */
+/************************************************************************/
+static errorType OnInit(void** DS, const char* const command) {
+    if (isInit) {
+        printf("Init was already called\n");
+        return (error_free);
+    } else {
+        *DS = Init();
+        if (*DS == NULL) {
+            printf("Init failed\n");
+            return error;
+        } else {
+            isInit = true;
+            printf("Init done\n");
+            return error_free;
+        }
+    }
+}
 
+/************************************************************************/
+/* OnQuit                                                               */
+/************************************************************************/
+static errorType OnQuit(void** DS, const char* const command) {
+    if (!isInit) {
+        printf("Quit not needed\n");
+        return (error_free);
+    } else {
+        Quit(DS);
+        if (*DS != NULL) {
+            printf("Quit failed\n");
+            return error;
+        } else {
+            isInit = false;
+            printf("Quit done\n");
+            return error_free;
+        }
+    }
+}
 
+/************************************************************************/
+/* OnAddCompany                                                         */
+/************************************************************************/
+static errorType OnAddCompany(void **DS, const char* const command) {
+    int CompanyID, Value;
+    ValidateRead(sscanf(command, "%d %d", &CompanyID, &Value), 2, "AddCompany failed.\n");
+    StatusType res = AddCompany(*DS, CompanyID, Value);
+    printf("AddCompany: %s\n", ReturnValToStr(res));
+    return error_free;
+}
 
-<div style="text-align: right;width: 600px;direction: rtl; background-color: #ffff80;border-radius: 10px;border: 2px solid black;margin: 6px; padding: 10px;">
-<div style="font-size:15px; font-weight:bold;color:blue;  ">
-מה? התרגיל להיום?
-<BR>
-קמת בבוקר ושכחת שיום מתכונת?
-<BR>
-איפה השיעור היום?
-<BR>
-חדש: היומן של <FONT DIR="LTR">GR++</FONT> איתך באייפון!
-<BR>
-<BR>
-</div>
-<DIV style="font-size:14px; color:black; font-weight: normal;">
+/************************************************************************/
+/* OnAddEmployee                                                        */
+/************************************************************************/
+static errorType OnAddEmployee(void **DS, const char* const command) {
+    int EmployeeID, CompanyID, Salary, Grade;
+    ValidateRead(sscanf(command, "%d %d %d %d", &EmployeeID, &CompanyID, &Salary, &Grade), 4, "AddEmployee failed.\n");
+    StatusType res = AddEmployee(*DS, EmployeeID, CompanyID, Salary, Grade);
+    printf("AddEmployee: %s\n", ReturnValToStr(res));
+    return error_free;
+}
 
-<FONT DIR="LTR">GR++</FONT> 
+/************************************************************************/
+/* OnRemoveCompany                                                      */
+/************************************************************************/
+static errorType OnRemoveCompany(void **DS, const char* const command) {
+    int CompanyID;
+    ValidateRead(sscanf(command, "%d", &CompanyID), 1, "RemoveCompany failed.\n");
+    StatusType res = RemoveCompany(*DS, CompanyID);
+    printf("RemoveCompany: %s\n", ReturnValToStr(res));
+    return error_free;
+}
 
-מייצא עבורכם יומן אישי ליומן הסלולרי או ל-outlook שלכם, כולל אירועי המקצועות אליהם אתם רשומים (למשל מבחנים), זמני הגשת תרגילי בית, והשיעורים והתרגולים שלכם.
-<BR>
-<BR>
-הגדרת היומן תחת "הגדרות"->"עדכון אוטומטי" ב-grades.cs.technion.ac.il. הוראות התחברות מפורטות מופיעות <A HREF="/help.cgi#calendar">בעזרה</A>.
-<BR>
-<IMG SRC="/Images/Help/cal.png" ALT="example of calendar event of a lecture in course 234112 - Introduction to computer - C language by Dr. Elena Novbari" style="border: 1px solid black; border-radius: 7px;">
+/************************************************************************/
+/* OnRemoveEmployee                                                     */
+/************************************************************************/
+static errorType OnRemoveEmployee(void **DS, const char* const command) {
+    int EmployeeID;
+    ValidateRead(sscanf(command, "%d", &EmployeeID), 1, "RemoveEmployee failed.\n");
+    StatusType res = RemoveEmployee(*DS, EmployeeID);
+    printf("RemoveEmployee: %s\n", ReturnValToStr(res));
+    return error_free;
+}
 
-</div>
-</div>
+/************************************************************************/
+/* OnGetCompanyInfo                                                     */
+/************************************************************************/
+static errorType OnGetCompanyInfo(void **DS, const char* const command) {
+    int CompanyID, Value, NumEmployees;
+    ValidateRead(sscanf(command, "%d", &CompanyID), 1, "GetCompanyInfo failed.\n");
+    StatusType res = GetCompanyInfo(*DS, CompanyID, &Value, &NumEmployees);
+    if (res == SUCCESS) {
+        printf("GetCompanyInfo: SUCCESS. Company %d has %d employees and value %d\n", CompanyID, NumEmployees, Value);
+    } else {
+        printf("GetCompanyInfo: %s\n", ReturnValToStr(res));
+    }
+    return error_free;
+}
 
+/************************************************************************/
+/* OnGetEmployeeInfo                                                    */
+/************************************************************************/
+static errorType OnGetEmployeeInfo(void **DS, const char* const command) {
+    int EmployeeID, EmployerID, Salary, Grade;
+    ValidateRead(sscanf(command, "%d", &EmployeeID), 1, "GetEmployeeInfo failed.\n");
+    StatusType res = GetEmployeeInfo(*DS, EmployeeID, &EmployerID, &Salary, &Grade);
+    if (res == SUCCESS) {
+        printf("GetEmployeeInfo: SUCCESS. Employee %d works at %d and earns %d at grade %d\n", EmployeeID, EmployerID, Salary, Grade);
+    } else {
+        printf("GetEmployeeInfo: %s\n", ReturnValToStr(res));
+    }
+    return error_free;
+}
 
+/************************************************************************/
+/* OnIncreaseCompanyValue                                               */
+/************************************************************************/
+static errorType OnIncreaseCompanyValue(void **DS, const char* const command) {
+    int CompanyID, ValueIncrease;
+    ValidateRead(sscanf(command, "%d %d", &CompanyID, &ValueIncrease), 2, "IncreaseCompanyValue failed.\n");
+    StatusType res = IncreaseCompanyValue(*DS, CompanyID, ValueIncrease);
+    printf("IncreaseCompanyValue: %s\n", ReturnValToStr(res));
+    return error_free;
+}
 
-</center>
-</div>
+/************************************************************************/
+/* OnPromoteEmployee                                                    */
+/************************************************************************/
+static errorType OnPromoteEmployee(void **DS, const char* const command) {
+    int EmployeeID, SalaryIncrease, BumpGrade;
+    ValidateRead(sscanf(command, "%d %d %d", &EmployeeID, &SalaryIncrease, &BumpGrade), 3, "PromoteEmployee failed.\n");
+    StatusType res = PromoteEmployee(*DS, EmployeeID, SalaryIncrease, BumpGrade);
+    printf("PromoteEmployee: %s\n", ReturnValToStr(res));
+    return error_free;
+}
 
-<!-- DIV style="position: absolute; top:0; left:0; width: 20%; color: blue; background-color: #ffff80; border-radius: 10px; min-height: 50px; border: 2px solid black; margin: 6px; padding: 10px; font-size: 15px; font-weight: bold; direction: rtl; text-align: rtl; z-index: -1;" -->
-</body>
-</html>
+/************************************************************************/
+/* OnHireEmployee                                                       */
+/************************************************************************/
+static errorType OnHireEmployee(void **DS, const char* const command) {
+    int EmployeeID, NewCompanyID;
+    ValidateRead(sscanf(command, "%d %d", &EmployeeID, &NewCompanyID), 2, "HireEmployee failed.\n");
+    StatusType res = HireEmployee(*DS, EmployeeID, NewCompanyID);
+    printf("HireEmployee: %s\n", ReturnValToStr(res));
+    return error_free;
+}
+
+/************************************************************************/
+/* OnAcquireCompany                                                     */
+/************************************************************************/
+static errorType OnAcquireCompany(void **DS, const char* const command) {
+    int AcquirerID, TargetID;
+    double Factor;
+    ValidateRead(sscanf(command, "%d %d %lf", &AcquirerID, &TargetID, &Factor), 3, "AcquireCompany failed.\n");
+    StatusType res = AcquireCompany(*DS, AcquirerID, TargetID, Factor);
+    printf("AcquireCompany: %s\n", ReturnValToStr(res));
+    return error_free;
+}
+
+/************************************************************************/
+/* OnGetHighestEarner                                                   */
+/************************************************************************/
+static errorType OnGetHighestEarner(void **DS, const char* const command) {
+    int CompanyID, EmployeeID;
+    ValidateRead(sscanf(command, "%d", &CompanyID), 1, "GetHighestEarner failed.\n");
+    StatusType res = GetHighestEarner(*DS, CompanyID, &EmployeeID);
+    if (res == SUCCESS) {
+        printf("GetHighestEarner: SUCCESS. Highest earner is %d\n", EmployeeID);
+    } else {
+        printf("GetHighestEarner: %s\n", ReturnValToStr(res));
+    }
+    return error_free;
+}
+
+/************************************************************************/
+/* OnGetAllEmployeesBySalary                                            */
+/************************************************************************/
+static errorType OnGetAllEmployeesBySalary(void **DS, const char* const command) {
+    int CompanyID, *Employees, NumOfEmployees;
+    ValidateRead(sscanf(command, "%d", &CompanyID), 1, "GetAllEmployeesBySalary failed.\n");
+    StatusType res = GetAllEmployeesBySalary(*DS, CompanyID, &Employees, &NumOfEmployees);
+    if (res == SUCCESS) {
+        printf("GetAllEmployeesBySalary: SUCCESS. Highest earners:\n");
+        printf("Employee Rank || Employee ID\n");
+        for (int i=0; i<NumOfEmployees; i++) {
+            printf("%d - %d\n", i, Employees[i]);
+        }
+        free(Employees);
+    } else {
+        printf("GetAllEmployeesBySalary: %s\n", ReturnValToStr(res));
+    }
+    return error_free;
+}
+
+/************************************************************************/
+/* OnGetHighestEarnerInEachCompany                                      */
+/************************************************************************/
+static errorType OnGetHighestEarnerInEachCompany(void **DS, const char* const command) {
+    int NumOfCompanies, *Employees;
+    ValidateRead(sscanf(command, "%d", &NumOfCompanies), 1, "GetHighestEarnerInEachCompany failed.\n");
+    StatusType res = GetHighestEarnerInEachCompany(*DS, NumOfCompanies, &Employees);
+    if (res == SUCCESS) {
+        printf("GetHighestEarnerInEachCompany: SUCCESS. Highest earners:\n");
+        printf("Company Index || Employee ID\n");
+        for (int i=0; i<NumOfCompanies; i++) {
+            printf("%d - %d\n", i, Employees[i]);
+        }
+        free(Employees);
+    } else {
+        printf("GetHighestEarnerInEachCompany: %s\n", ReturnValToStr(res));
+    }
+    return error_free;
+}
+
+/************************************************************************/
+/* OnGetNumEmployeesMatching                                            */
+/************************************************************************/
+static errorType OnGetNumEmployeesMatching(void **DS, const char* const command) {
+    int CompanyID, MinEmployeeID, MaxEmployeeId, MinSalary, MinGrade, TotalNumOfEmployees, NumOfEmployees;
+    ValidateRead(sscanf(command, "%d %d %d %d %d", &CompanyID, &MinEmployeeID, &MaxEmployeeId, &MinSalary, &MinGrade), 5, "GetNumEmployeesMatching failed.\n");
+    StatusType res = GetNumEmployeesMatching(*DS, CompanyID, MinEmployeeID, MaxEmployeeId, MinSalary, MinGrade, &TotalNumOfEmployees, &NumOfEmployees);
+    if (res == SUCCESS) {
+        printf("GetNumEmployeesMatching: SUCCESS. Out of %d, %d match\n", TotalNumOfEmployees, NumOfEmployees);
+    } else {
+        printf("GetNumEmployeesMatching: %s\n", ReturnValToStr(res));
+    }
+    return error_free;
+}
+
+#ifdef __cplusplus
+}
+#endif
