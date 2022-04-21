@@ -1,6 +1,7 @@
 #ifndef EMPLOYEE_H_
 #define EMPLOYEE_H_
 #include <memory>
+#include "company.h"
 
 class EmployeeKey
 {
@@ -8,6 +9,7 @@ class EmployeeKey
     const int id;
     int salary;
     EmployeeKey(int id, int salary);
+    bool operator<(EmployeeKey other_key);
 };
 
 class Employee
@@ -19,8 +21,8 @@ class Employee
     std::weak_ptr<Company> employer;
     std::weak_ptr<Company> dummy;
 
-    Employee(int id, int salary, int grade, std::weak_ptr<Company> employer, std::weak_ptr<Company> dummy);
-    ~Employee();
+    Employee(int id, int salary, int grade, std::weak_ptr<Company> employer, 
+            std::weak_ptr<Company> dummy);
     void promote(int salary_increase, bool bump_grade);
 };
 
