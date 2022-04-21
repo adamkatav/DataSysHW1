@@ -3,9 +3,9 @@
 #include "avlTree.h"
 #include <memory>
 
-Company::Company(int value, int id, std::shared_ptr<AVLTree<EmployeeKey, Employee, std::weak_ptr>> employees, 
-            std::weak_ptr<Employee> highest_earner):value(value), id(id), employees(employees), 
-            highest_earner(highest_earner) {}
+Company::Company(int value, int id, std::weak_ptr<Employee> highest_earner,
+                std::shared_ptr<AVLTree<EmployeeKey, Employee, std::weak_ptr>> employees): 
+                value(value), id(id), highest_earner(highest_earner),employees(employees){}
 
 int Company::getValue()
 {
