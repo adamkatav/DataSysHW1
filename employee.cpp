@@ -17,6 +17,15 @@ bool EmployeeKey::operator<(EmployeeKey other_key)
     return false;
 }
 
+bool EmployeeKey::operator==(EmployeeKey other_key)
+{
+    if (salary==other_key.salary && id == other_key.id)
+    {
+        return true;
+    }
+    return false;
+}
+
 Employee::Employee(int id, int salary, int grade, std::weak_ptr<Company> employer,
         std::weak_ptr<Company> dummy): id(id), salary(salary), grade(grade), 
         employer(employer), dummy(dummy){}

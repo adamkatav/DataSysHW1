@@ -11,6 +11,7 @@ class EmployeeKey
     int salary;
     EmployeeKey(int id, int salary);
     bool operator<(EmployeeKey other_key);
+    bool operator==(EmployeeKey other_key);
 };
 
 class Employee
