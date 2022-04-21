@@ -1,4 +1,6 @@
 #include "company.h"
+#include "employee.h"
+#include "avlTree.h"
 #include <memory>
 
 Company::Company(int value, int id, std::shared_ptr<AVLTree<EmployeeKey, Employee, std::weak_ptr>> employees, 

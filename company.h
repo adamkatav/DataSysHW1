@@ -2,6 +2,7 @@
 #define COMPANY_H_
 #include <memory>
 #include "employee.h"
+#include "avlTree.h"
 
 class Company
 {

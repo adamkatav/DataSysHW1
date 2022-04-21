@@ -1,4 +1,6 @@
 #include "employee.h"
+#include "avlTree.h"
+#include <memory>
 
 EmployeeKey::EmployeeKey(int id, int salary):id(id),salary(salary){}
 
