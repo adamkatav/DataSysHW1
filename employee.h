@@ -10,8 +10,8 @@ class EmployeeKey
     const int id;
     int salary;
     EmployeeKey(int id, int salary);
-    bool operator<(EmployeeKey other_key);
-    bool operator==(EmployeeKey other_key);
+    bool operator<(const EmployeeKey& other_key);
+    bool operator==(const EmployeeKey& other_key);
 };
 
 class Employee
