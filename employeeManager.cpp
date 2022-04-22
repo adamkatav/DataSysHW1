@@ -22,7 +22,7 @@ StatusType EmployeeManager::AddCompany(int CompanyID, int Value)
    std::make_shared<AVLTree<EmployeeKey, Employee, std::weak_ptr>>(AVLTree<EmployeeKey, Employee, std::weak_ptr>())));
    if(company == nullptr) return ALLOCATION_ERROR;
 
-   companies->add(CompanyID,company);
+   companies->add(CompanyID,company);//catch exception
    return SUCCESS;
 }
 
@@ -40,10 +40,10 @@ StatusType EmployeeManager::AddEmployee(int EmployeeID, int CompanyID, int Salar
    if (employee==nullptr) return ALLOCATION_ERROR;
 
    employees->add(EmployeeID,employee); //add the employee to the general employee tree 
-
+   //catch exception
    EmployeeKey current_key = EmployeeKey(EmployeeID,Salary);
    company.lock()->employees->add(current_key,employee); //add the employee to its company
-
+   //catch exception
    //check if we need to replace highest earner in company
    if ( company.lock()->highest_earner.lock() == nullptr ) 
    {
@@ -59,7 +59,7 @@ StatusType EmployeeManager::AddEmployee(int EmployeeID, int CompanyID, int Salar
    }
 
    dummy->employees->add(current_key,employee); //add the employee to dummy
-
+   //catch exception
    //check if the highest earner in dummy needs to be replaced
    if ( dummy->highest_earner.lock() == nullptr ) 
    {
@@ -83,6 +83,41 @@ StatusType EmployeeManager::RemoveCompany(int CompanyID)
    std::weak_ptr<Company> company = companies->getValue(CompanyID);
    if(company.lock() == nullptr) return FAILURE;
    if( !company.lock()->employees->isEmpty()) return FAILURE;
-   companies->remove(CompanyID);
+   companies->remove(CompanyID); //catch exception
+   return SUCCESS;
+}
+
+StatusType EmployeeManager::RemoveEmployee(int EmployeeID)
+{
+   if ( EmployeeID <= 0 ) return INVALID_INPUT;
+   std::shared_ptr<Employee> employee = std::make_shared<Employee>(employees->getValue(EmployeeID));
+   if( employee == nullptr ) return FAILURE;
+   EmployeeKey key = EmployeeKey(employee->id, employee->salary);
+   employee->employer.lock()->employees->remove(key); //catch exception
+   //find the new max!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+   dummy->employees->remove(key); //catch exception
+   //find the new max!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+   employees->remove(EmployeeID); //catch exception
+   return SUCCESS;
+}
+
+StatusType EmployeeManager::GetCompanyInfo(int CompanyID, int *Value, int *NumEmployees)
+{
+   if ( CompanyID<=0 || Value==nullptr || NumEmployees==nullptr ) return INVALID_INPUT;
+   std::weak_ptr<Company> company = companies->getValue(CompanyID);
+   if( company.lock() == nullptr ) return FAILURE;
+   *Value = company.lock()->getValue();
+   //*NumEmployees = company.lock()->employees->size(); //////////////////add size function to the tree!!!!
+   return SUCCESS;
+}
+
+StatusType EmployeeManager::GetEmployeeInfo(int EmployeeID, int *EmployerID, int *Salary, int *Grade)
+{
+   if (EmployeeID<=0 || EmployerID==nullptr || Salary==nullptr || Grade==nullptr) return INVALID_INPUT;
+   std::weak_ptr<Employee> employee = employees->getValue(EmployeeID);
+   if( employee.lock() == nullptr ) return FAILURE;
+   *Salary = employee.lock()->salary;
+   *Grade = employee.lock()->grade;
+   *EmployerID = employee.lock()->employer.lock()->id;
    return SUCCESS;
 }
