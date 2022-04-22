@@ -146,3 +146,22 @@ StatusType EmployeeManager::PromoteEmployee(int EmployeeID, int SalaryIncrease, 
    if (res2 == ALLOCATION_ERROR) return ALLOCATION_ERROR;
    return SUCCESS;
 }
+
+StatusType EmployeeManager::HireEmployee(int EmployeeID, int NewCompanyID)
+{
+   if ( EmployeeID<=0 || NewCompanyID<=0 ) return INVALID_INPUT;
+   std::weak_ptr<Employee> employee = employees->getValue(EmployeeID);
+   if( employee.lock() == nullptr ) return FAILURE;
+   std::weak_ptr<Company> new_company = companies->getValue(NewCompanyID);
+   if( new_company.lock() == nullptr ) return FAILURE;
+   EmployeeKey key = EmployeeKey(EmployeeID,employee.lock()->salary);
+   //check if the employee already works at the new company:
+   if(new_company.lock()->employees->getValue(key).lock() != nullptr) return FAILURE;
+   //remove employee from old company:
+   employee.lock()->employer.lock()->employees->remove(key);
+   //employee.lock()->employer.lock()->highest_earner = new max!!!!!
+   employee.lock()->employer = new_company;
+   new_company.lock()->employees->add(key,employee);
+   //new_company.lock()->highest_earner = new maxxxxx!!!!!!!!!
+   return SUCCESS;
+}

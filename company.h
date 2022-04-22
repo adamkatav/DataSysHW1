@@ -18,7 +18,6 @@ class Company
             std::shared_ptr<AVLTree<EmployeeKey, Employee, std::weak_ptr>> employees);
     int getValue();
     void increaseValue(int amount);
-    
 };
 
 
