@@ -21,10 +21,8 @@ class Employee
     int salary;
     int grade;
     std::weak_ptr<Company> employer;
-    std::weak_ptr<Company> dummy;
 
-    Employee(int id, int salary, int grade, std::weak_ptr<Company> employer, 
-            std::weak_ptr<Company> dummy);
+    Employee(int id, int salary, int grade, std::weak_ptr<Company> employer);
     void promote(int salary_increase, bool bump_grade);
 };
 

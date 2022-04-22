@@ -18,7 +18,7 @@ StatusType EmployeeManager::AddCompany(int CompanyID, int Value)
    std::shared_ptr<Company> company = std::make_shared<Company>(companies->getValue(CompanyID));
    if (company != nullptr) return FAILURE;
 
-   company = std::make_shared<Company>(Company(Value, CompanyID, std::weak_ptr<Employee>(),
+   company = std::make_shared<Company>(new Company(Value, CompanyID, std::weak_ptr<Employee>(),
    std::make_shared<AVLTree<EmployeeKey, Employee, std::weak_ptr>>(AVLTree<EmployeeKey, Employee, std::weak_ptr>())));
    if(company == nullptr) return ALLOCATION_ERROR;
 
@@ -36,7 +36,7 @@ StatusType EmployeeManager::AddEmployee(int EmployeeID, int CompanyID, int Salar
    std::shared_ptr<Employee> employee = std::make_shared<Employee>(employees->getValue(EmployeeID));
    if (employee != nullptr) return FAILURE;
 
-   employee = std::make_shared<Employee>(EmployeeID,Salary,Grade,company,this->dummy);
+   employee = std::make_shared<Employee>(new Employee(EmployeeID,Salary,Grade,company));
    if (employee==nullptr) return ALLOCATION_ERROR;
 
    employees->add(EmployeeID,employee); //add the employee to the general employee tree 
@@ -119,5 +119,30 @@ StatusType EmployeeManager::GetEmployeeInfo(int EmployeeID, int *EmployerID, int
    *Salary = employee.lock()->salary;
    *Grade = employee.lock()->grade;
    *EmployerID = employee.lock()->employer.lock()->id;
+   return SUCCESS;
+}
+
+StatusType EmployeeManager::IncreaseCompanyValue(int CompanyID, int ValueIncrease)
+{
+   if ( CompanyID <= 0 || ValueIncrease <= 0 ) return INVALID_INPUT;
+   std::weak_ptr<Company> company = companies->getValue(CompanyID);
+   if( company.lock() == nullptr ) return FAILURE;
+   company.lock()->increaseValue(ValueIncrease); //catch exception
+   return SUCCESS;
+}
+
+StatusType EmployeeManager::PromoteEmployee(int EmployeeID, int SalaryIncrease, int BumpGrade)
+{
+   if (EmployeeID <= 0 || SalaryIncrease <= 0 ) return INVALID_INPUT;
+   std::weak_ptr<Employee> employee = employees->getValue(EmployeeID);
+   if( employee.lock() == nullptr ) return FAILURE;
+   int new_salary = employee.lock()->salary + SalaryIncrease;
+   int new_grade = employee.lock()->grade;
+   if(BumpGrade>0) new_grade++;
+   int company_id = employee.lock()->employer.lock()->id;
+   StatusType res1 = RemoveEmployee(EmployeeID);
+   if (res1 == ALLOCATION_ERROR) return ALLOCATION_ERROR;
+   StatusType res2 = AddEmployee(EmployeeID, company_id, new_salary, new_grade);
+   if (res2 == ALLOCATION_ERROR) return ALLOCATION_ERROR;
    return SUCCESS;
 }
