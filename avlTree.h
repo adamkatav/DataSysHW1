@@ -9,14 +9,14 @@ template<class Key, class Value, template<class> class Ptr>
 class AVLNode{
     public:
     Key key;
-    Value value;
+    Ptr<Value> value;
     int height;
     std::shared_ptr<AVLNode<Key,Value,Ptr>> left, right;
     std::weak_ptr<AVLNode<Key,Value,Ptr>> parent;
 
     AVLNode<Key, Value, Ptr>(Key key, Value value,
         std::shared_ptr<AVLNode<Key,Value,Ptr>> left, std::shared_ptr<AVLNode<Key,Value,Ptr>> right,
-        std::weak_ptr<AVLNode<Key,Value,Ptr>> parent):key(key), value(value),
+        std::weak_ptr<AVLNode<Key,Value,Ptr>> parent):key(key), value(Ptr<Value>(value)),
         left(left), right(right), parent(parent){}
 
     int getBalanceFactor(){
@@ -37,7 +37,7 @@ class AVLTree
 private:
 
 
-Ptr<AVLNode<Key,Value,Ptr>> root;
+std::shared_ptr<AVLNode<Key,Value,Ptr>> root;
 std::weak_ptr<AVLNode<Key,Value,Ptr>> rotateLeft(std::weak_ptr<AVLNode<Key,Value,Ptr>> x){
     auto y = x->right;
     auto T2 = y->left;
@@ -115,5 +115,7 @@ void inOrder(std::function<void(Args...)> const & func, Args ... as);
 bool isEmpty(){
     return root == nullptr;
 }
+
+
 };
 #endif
