@@ -15,9 +15,8 @@ class AVLNode{
     std::weak_ptr<AVLNode<Key,Value,Ptr>> parent;
 
     AVLNode<Key, Value, Ptr>(Key key, Value value,
-        std::shared_ptr<AVLNode<Key,Value,Ptr>> left, std::shared_ptr<AVLNode<Key,Value,Ptr>> right,
-        std::weak_ptr<AVLNode<Key,Value,Ptr>> parent):key(key), value(Ptr<Value>(value)),
-        left(left), right(right), parent(parent){}
+        std::shared_ptr<AVLNode<Key,Value,Ptr>> left, std::shared_ptr<AVLNode<Key,Value,Ptr>> right):key(key), value(Ptr<Value>(value))
+        ,height(1) , left(left), right(right){}
 
     int getBalanceFactor(){
         return getHeight(left) - getHeight(right);
@@ -28,6 +27,14 @@ class AVLNode{
         int hright = node->right != nullptr ? node->right->height : 0;
         return (hleft > hright ? hleft : hright) + 1;
     }
+
+    static AVLNode createAVLNode(Key key, Value& value,
+        std::shared_ptr<AVLNode<Key,Value,Ptr>> left, std::shared_ptr<AVLNode<Key,Value,Ptr>> right,
+        std::weak_ptr<AVLNode<Key,Value,Ptr>> parent){
+            AVLNode temp = AVLNode(key, value, left, right);
+            temp.parent = std::weak_ptr<AVLNode<Key,Value,Ptr>>(temp);
+            return temp;
+        }
 };
 
 
@@ -38,7 +45,7 @@ private:
 
 
 std::shared_ptr<AVLNode<Key,Value,Ptr>> root;
-std::weak_ptr<AVLNode<Key,Value,Ptr>> rotateLeft(std::weak_ptr<AVLNode<Key,Value,Ptr>> x){
+bool rotateLeft(std::weak_ptr<AVLNode<Key,Value,Ptr>> x){
     auto y = x->right;
     auto T2 = y->left;
 
@@ -48,9 +55,9 @@ std::weak_ptr<AVLNode<Key,Value,Ptr>> rotateLeft(std::weak_ptr<AVLNode<Key,Value
     x->height = height(x->left) > height(x->right) + 1? height(x->left) : height(x->right) + 1;
     y->height = height(y->left) > height(y->right) + 1? height(y->left) : height(y->right) + 1;
 
-    return y;
+    return true;
 }
-std::weak_ptr<AVLNode<Key,Value,Ptr>> rotateRight(std::weak_ptr<AVLNode<Key,Value,Ptr>> x){
+bool rotateRight(std::weak_ptr<AVLNode<Key,Value,Ptr>> x){
     auto y = x->left;
     auto T2 = y->right;
 
@@ -60,40 +67,61 @@ std::weak_ptr<AVLNode<Key,Value,Ptr>> rotateRight(std::weak_ptr<AVLNode<Key,Valu
     x->height = height(x->left) > height(x->right) + 1? height(x->left) : height(x->right) + 1;
     y->height = height(y->left) > height(y->right) + 1? height(y->left) : height(y->right) + 1;
 
-    return y;
+    return true;
 }
-std::weak_ptr<AVLNode<Key,Value,Ptr>> rotate(std::weak_ptr<AVLNode<Key,Value,Ptr>> parent){
-    if(parent->balance_factor == 2){
-        if(parent->left->balance_factor >= 0){ //LL
+bool rotate(std::weak_ptr<AVLNode<Key,Value,Ptr>> parent){
+    if(parent->getBalanceFactor() == 2){
+        if(parent->left->getBalanceFactor() >= 0){ //LL
             return rotateRight(parent);
         }
-        else if (parent->left->balance_factor == -1){//LR
+        else if (parent->left->getBalanceFactor() == -1){//LR
             parent->left = rotateLeft(parent->left);
             return rotateRight(parent->left);
         }
     }
-    else if (parent->balance_factor == -2){
-        if(parent->right->balance_factor <= 0){ //RR
+    else if (parent->getBalanceFactor() == -2){
+        if(parent->right->getBalanceFactor() <= 0){ //RR
             return rotateLeft(parent);
         }
-        else if (parent->right->balance_factor == 1){//RL
+        else if (parent->right->getBalanceFactor() == 1){//RL
             parent->right = rotateRight(parent->right);
             return rotateLeft(parent);
         }
     }
-    return parent;
+    if(parent->parent->key != parent->key) rotate(parent->parent);
+    return false;
 }
-    
+
+int max(int a, int b){
+    return a > b ? a : b;
+}
+
+int add_t(Key key, Ptr<Value> value_ptr, std::weak_ptr<AVLNode<Key,Value,Ptr>> root){
+    if(key < root->key){
+        if(root->left == nullptr){
+            root->left = std::shared_ptr<AVLNode<Key,Value,Ptr>>(createAVLNode(key, value_ptr, nullptr, nullptr, root)); // Should pass weak_ptr
+            return getHeight(root); 
+        }
+        root->height = max(add_t(key, value_ptr, root->left), getHeight(root->right)) + 1;
+        rotate(root->parent);
+    }
+    else{
+        if(root->right == nullptr){
+            root->right = std::shared_ptr<AVLNode<Key,Value,Ptr>>(createAVLNode(key, value_ptr, nullptr, nullptr, root)); // Should pass weak_ptr
+            return getHeight(root);
+        }
+        root->height = max(add_t(key, value_ptr, root->right), getHeight(root->left)) + 1;
+        rotate(root->parent);
+    }
+    return getHeight(root);
+}    
+
 public:
 AVLTree<Key, Value, Ptr>() : root(nullptr){}
 void add(Key key, Ptr<Value> value_ptr){
     if(getValue(key) != nullptr) throw std::runtime_error("Key already exist");
-    if(key < root->key){
-        if(root->left == nullptr){
-            root->left = Ptr<Value> 
-        }
-        root->left->add(key, value_ptr);
-    }
+    if(isEmpty()) root = std::shared_ptr<AVLNode<Key,Value,Ptr>>(createAVLNode(key, value_ptr, nullptr, nullptr, root));
+    add_t(key, value_ptr, root);
 }
 void remove(Key key);
 void addAVLTree(std::weak_ptr<AVLTree<Key,Value,Ptr>> other_tree);
