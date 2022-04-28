@@ -31,12 +31,13 @@ public:
         return (hleft > hright ? hleft : hright) + 1;
     }
 
-    static AVLNode createAVLNode(Key key, Value &value,
+    static std::shared_ptr<AVLNode<Key, Value, Ptr>> createAVLNode(Key key, Value &value,
                                  std::shared_ptr<AVLNode<Key, Value, Ptr>> left, std::shared_ptr<AVLNode<Key, Value, Ptr>> right,
                                  std::weak_ptr<AVLNode<Key, Value, Ptr>> parent)
     {
-        AVLNode temp = AVLNode(key, value, left, right);
-        temp.parent = std::weak_ptr<AVLNode<Key, Value, Ptr>>(temp);
+
+        auto temp = std::make_shared(new AVLNode(key, value, left, right));
+        temp->parent = std::weak_ptr<AVLNode<Key, Value, Ptr>>(temp);
         return temp;
     }
 };
@@ -129,7 +130,7 @@ private:
         {
             if (root->left == nullptr)
             {
-                root->left = std::shared_ptr<AVLNode<Key, Value, Ptr>>(createAVLNode(key, value_ptr, nullptr, nullptr, root)); // Should pass weak_ptr
+                root->left = createAVLNode(key, value_ptr, nullptr, nullptr, root); // Should pass weak_ptr
                 return getHeight(root);
             }
             add_t(key, value_ptr, root->left);
@@ -140,7 +141,7 @@ private:
         {
             if (root->right == nullptr)
             {
-                root->right = std::shared_ptr<AVLNode<Key, Value, Ptr>>(createAVLNode(key, value_ptr, nullptr, nullptr, root)); // Should pass weak_ptr
+                root->right = createAVLNode(key, value_ptr, nullptr, nullptr, root); // Should pass weak_ptr
                 return getHeight(root);
             }
             add_t(key, value_ptr, root->right);
@@ -149,14 +150,28 @@ private:
         }
         return getHeight(root);
     }
+    
+    int sortedArrayOfThisAndAnotherTree(std::shared_ptr<AVLNode<Key, Value, Ptr>[]>& out_nodeArray, std::weak_ptr<AVLTree<Key, Value, Ptr>> other_tree);
+
+    void addAVLTree_t(AVLNode<Key, Value, Ptr>[] node_arr, int s, int e, AVLNode<Key, Value, Ptr> &new_node, AVLNode<Key, Value, Ptr> parent){
+        if(s > e){
+            return;
+        }
+        int m = (s + e)/2;
+        new_node = std::make_shared(createAVLNode(node_arr[m]->key, node_arr[m]->value, nullptr, nullptr, parent));
+        addAVLTree_t(node_arr, s, m-1, new_node->left, new_node);
+        addAVLTree_t(node_arr, m+1, e, new_node->right, new_node);
+    }
 public:
     AVLTree<Key, Value, Ptr>() : root(nullptr) {}
     void add(Key key, Ptr<Value> value_ptr)
     {
+        if (isEmpty()){
+            root = createAVLNode(key, value_ptr, nullptr, nullptr, root);
+            root->parent = root;
+        }
         if (getValue(key) != nullptr)
             throw std::runtime_error("Key already exist");
-        if (isEmpty())
-            root = std::shared_ptr<AVLNode<Key, Value, Ptr>>(createAVLNode(key, value_ptr, nullptr, nullptr, root));
         add_t(key, value_ptr, root);
     }
     int remove(Key key){
@@ -208,7 +223,11 @@ public:
             }
         return 0;
     }
-    void addAVLTree(std::weak_ptr<AVLTree<Key, Value, Ptr>> other_tree);
+    void addAVLTree(std::weak_ptr<AVLTree<Key, Value, Ptr>> other_tree){
+        std::shared_ptr<AVLNode<Key, Value, Ptr>[]> nodeArray;
+        int nodeArray_size = sortedArrayOfThisAndAnotherTree(nodeArray, other_tree);
+        addAVLTree_t(nodeArray, 0, nodeArray_size-1, root, root);
+    }
     std::weak_ptr<AVLTree<Key, Value, Ptr>> getMin(std::shared_ptr<AVLTree<Key, Value, Ptr>> root){
         while(root->left != nullptr){
             root = root->left;
