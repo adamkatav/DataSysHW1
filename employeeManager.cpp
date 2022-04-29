@@ -23,7 +23,7 @@ StatusType EmployeeManager::AddCompany(int CompanyID, int Value)
    std::make_shared<AVLTree<int, Employee, std::weak_ptr>>(AVLTree<int, Employee, std::weak_ptr>())));
    if(company == nullptr) return ALLOCATION_ERROR;
 
-   companies->add(CompanyID,company);//catch exception
+   companies->add(CompanyID,*company);//catch exception
    return SUCCESS;
 }
 
@@ -36,10 +36,10 @@ StatusType EmployeeManager::AddEmployee(int EmployeeID, int CompanyID, int Salar
    if (employee != nullptr) return FAILURE;
    employee = std::make_shared<Employee>(new Employee(EmployeeID,Salary,Grade,company));
    if (employee==nullptr) return ALLOCATION_ERROR;
-   employees->add(EmployeeID,employee); //add the employee to the general employee tree 
+   employees->add(EmployeeID,*employee); //add the employee to the general employee tree 
    //catch exception
    EmployeeKey current_key = EmployeeKey(EmployeeID,Salary);
-   company.lock()->employees->add(current_key,employee); //add the employee to its company
+   company.lock()->employees_by_salary->add(current_key,*employee); //add the employee to its company
    //catch exception
    //check if we need to replace highest earner in company
    if ( company.lock()->highest_earner.lock() == nullptr ) 
@@ -54,7 +54,7 @@ StatusType EmployeeManager::AddEmployee(int EmployeeID, int CompanyID, int Salar
          company.lock()->highest_earner = employee;
       }
    }
-   dummy->employees->add(current_key,employee); //add the employee to dummy
+   dummy->employees_by_salary->add(current_key,*employee); //add the employee to dummy
    //catch exception
    //check if the highest earner in dummy needs to be replaced
    if ( dummy->highest_earner.lock() == nullptr ) 
@@ -77,7 +77,7 @@ StatusType EmployeeManager::RemoveCompany(int CompanyID)
    if ( companies <= 0 ) return INVALID_INPUT;
    std::weak_ptr<Company> company = companies->getValue(CompanyID);
    if(company.lock() == nullptr) return FAILURE;
-   if( !company.lock()->employees->isEmpty()) return FAILURE;
+   if( !company.lock()->employees_by_salary->isEmpty()) return FAILURE;
    companies->remove(CompanyID); //catch exception
    return SUCCESS;
 }
@@ -88,9 +88,9 @@ StatusType EmployeeManager::RemoveEmployee(int EmployeeID)
    std::shared_ptr<Employee> employee = std::make_shared<Employee>(employees->getValue(EmployeeID));
    if( employee == nullptr ) return FAILURE;
    EmployeeKey key = EmployeeKey(employee->id, employee->salary);
-   employee->employer.lock()->employees->remove(key); //catch exception
+   employee->employer.lock()->employees_by_salary->remove(key); //catch exception
    //find the new max!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   dummy->employees->remove(key); //catch exception
+   dummy->employees_by_salary->remove(key); //catch exception
    //find the new max!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    employees->remove(EmployeeID); //catch exception
    return SUCCESS;
@@ -151,12 +151,12 @@ StatusType EmployeeManager::HireEmployee(int EmployeeID, int NewCompanyID)
    if( new_company.lock() == nullptr ) return FAILURE;
    EmployeeKey key = EmployeeKey(EmployeeID,employee.lock()->salary);
    //check if the employee already works at the new company:
-   if(new_company.lock()->employees->getValue(key).lock() != nullptr) return FAILURE;
+   if(new_company.lock()->employees_by_salary->getValue(key).lock() != nullptr) return FAILURE;
    //remove employee from old company:
-   employee.lock()->employer.lock()->employees->remove(key);
+   employee.lock()->employer.lock()->employees_by_salary->remove(key);
    //employee.lock()->employer.lock()->highest_earner = new max!!!!!
    employee.lock()->employer = new_company;
-   new_company.lock()->employees->add(key,employee);
+   new_company.lock()->employees_by_salary->add(key,*employee.lock());
    //new_company.lock()->highest_earner = new maxxxxx!!!!!!!!!
    return SUCCESS;
 }
@@ -170,7 +170,7 @@ StatusType EmployeeManager::AcquireCompany(int AcquirerID, int TargetID, double 
    if( target.lock() == nullptr ) return FAILURE;
    if (acquirer.lock()->getValue() < 10*(target.lock()->getValue())) return FAILURE;
    //move the employees of target to the acquirer:
-   acquirer.lock()->employees->addAVLTree(target.lock()->employees); //catch exception
+   acquirer.lock()->employees_by_salary->addAVLTree(target.lock()->employees_by_salary); //catch exception
    //delete all employees from target so you can delete the company
    /////////////target.lock()->employees->CLEAR THE TREE
    acquirer.lock()->increaseValue(target.lock()->getValue());
@@ -189,13 +189,13 @@ StatusType EmployeeManager::GetHighestEarner(int CompanyID, int *EmployeeID)
       std::weak_ptr<Company> company = companies->getValue(CompanyID);
       if ( company.lock() == nullptr ) return FAILURE;
       //first check if there are employees in this company
-      if ( company.lock()->employees->isEmpty() ) return FAILURE;
+      if ( company.lock()->employees_by_salary->isEmpty() ) return FAILURE;
       *EmployeeID = company.lock()->highest_earner.lock()->id;
       return SUCCESS;
    }
    //we get here only if CompanyID < 0 !!
    //if there are no employees in the system:
-   if (dummy->employees->isEmpty()) return FAILURE;
+   if (dummy->employees_by_salary->isEmpty()) return FAILURE;
    *EmployeeID = dummy->highest_earner.lock()->id;
    return SUCCESS;
 }

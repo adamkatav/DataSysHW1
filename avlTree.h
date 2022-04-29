@@ -24,10 +24,10 @@ public:
     }
     static int getHeight(std::weak_ptr<AVLNode<Key, Value, Ptr>> node)
     {
-        if (node == nullptr)
+        if (node.lock() == nullptr)
             return 0;
-        int hleft = node->left != nullptr ? node->left->height : 0;
-        int hright = node->right != nullptr ? node->right->height : 0;
+        int hleft = node.lock()->left != nullptr ? node.lock()->left->height : 0;
+        int hright = node.lock()->right != nullptr ? node.lock()->right->height : 0;
         return (hleft > hright ? hleft : hright) + 1;
     }
 
@@ -49,74 +49,74 @@ private:
     std::shared_ptr<AVLNode<Key, Value, Ptr>> root;
     std::weak_ptr<AVLNode<Key, Value, Ptr>> rotateLeft(std::weak_ptr<AVLNode<Key, Value, Ptr>> x)
     {
-        auto y = x->right;
+        auto y = x.lock()->right;
         auto T2 = y->left;
-        y->parent = x->parent;
-        if(x->key == root->key){
+        y->parent = x.lock()->parent;
+        if(x.lock()->key == root->key){
             root = y;
         }
 
-        y->left = x;
-        x->parent = y;
-        x->right = T2;
+        y->left = x.lock();
+        x.lock()->parent = y;
+        x.lock()->right = T2;
         if(T2 != nullptr){
-            T2->parent = x;
+            T2->parent = x.lock();
         }
 
-        x->height = height(x->left) > height(x->right) + 1 ? height(x->left) : height(x->right) + 1;
-        y->height = height(y->left) > height(y->right) + 1 ? height(y->left) : height(y->right) + 1;
+        x.lock()->height = AVLNode<Key, Value, Ptr>::getHeight(x.lock()->left) > AVLNode<Key, Value, Ptr>::getHeight(x.lock()->right) + 1 ? AVLNode<Key, Value, Ptr>::getHeight(x.lock()->left) : AVLNode<Key, Value, Ptr>::getHeight(x.lock()->right) + 1;
+        y->height = AVLNode<Key, Value, Ptr>::getHeight(y->left) > AVLNode<Key, Value, Ptr>::getHeight(y->right) + 1 ? AVLNode<Key, Value, Ptr>::getHeight(y->left) : AVLNode<Key, Value, Ptr>::getHeight(y->right) + 1;
 
         return y;
     }
     std::weak_ptr<AVLNode<Key, Value, Ptr>> rotateRight(std::weak_ptr<AVLNode<Key, Value, Ptr>> x)
     {
-        auto y = x->left;
+        auto y = x.lock()->left;
         auto T2 = y->right;
-        y->parent = x->parent;
-        if(x->key == root->key){
+        y->parent = x.lock()->parent;
+        if(x.lock()->key == root->key){
             root = y;
         }
-        y->right = x;
-        x->parent = y;
-        x->left = T2;
+        y->right = x.lock();
+        x.lock()->parent = y;
+        x.lock()->left = T2;
         if(T2 != nullptr){
             T2->parent = x;
         }
 
-        x->height = height(x->left) > height(x->right) + 1 ? height(x->left) : height(x->right) + 1;
-        y->height = height(y->left) > height(y->right) + 1 ? height(y->left) : height(y->right) + 1;
+        x.lock()->height = AVLNode<Key, Value, Ptr>::getHeight(x.lock()->left) > AVLNode<Key, Value, Ptr>::getHeight(x.lock()->right) + 1 ? AVLNode<Key, Value, Ptr>::getHeight(x.lock()->left) : AVLNode<Key, Value, Ptr>::getHeight(x.lock()->right) + 1;
+        y->height = AVLNode<Key, Value, Ptr>::getHeight(y->left) > AVLNode<Key, Value, Ptr>::getHeight(y->right) + 1 ? AVLNode<Key, Value, Ptr>::getHeight(y->left) :AVLNode<Key, Value, Ptr>:: getHeight(y->right) + 1;
 
         return y;
     }
-    bool rotate(std::weak_ptr<AVLNode<Key, Value, Ptr>> parent)
+    std::weak_ptr<AVLNode<Key, Value, Ptr>> rotate(std::weak_ptr<AVLNode<Key, Value, Ptr>> parent)
     {
-        if (parent->getBalanceFactor() == 2)
+        if (parent.lock()->getBalanceFactor() == 2)
         {
-            if (parent->left->getBalanceFactor() >= 0)
+            if (parent.lock()->left->getBalanceFactor() >= 0)
             { // LL
                 return rotateRight(parent);
             }
-            else if (parent->left->getBalanceFactor() == -1)
+            else if (parent.lock()->left->getBalanceFactor() == -1)
             { // LR
-                parent->left = rotateLeft(parent->left);
-                return rotateRight(parent->left);
+                parent.lock()->left = rotateLeft(parent.lock()->left).lock();
+                return rotateRight(parent.lock()->left);
             }
         }
-        else if (parent->getBalanceFactor() == -2)
+        else if (parent.lock()->getBalanceFactor() == -2)
         {
-            if (parent->right->getBalanceFactor() <= 0)
+            if (parent.lock()->right->getBalanceFactor() <= 0)
             { // RR
                 return rotateLeft(parent);
             }
-            else if (parent->right->getBalanceFactor() == 1)
+            else if (parent.lock()->right->getBalanceFactor() == 1)
             { // RL
-                parent->right = rotateRight(parent->right);
+                parent.lock()->right = rotateRight(parent.lock()->right).lock();
                 return rotateLeft(parent);
             }
         }
-        if (parent->parent->key != parent->key)
-            rotate(parent->parent);
-        return false;
+        if (parent.lock()->parent.lock()->key != parent.lock()->key)
+            rotate(parent.lock()->parent);
+        return parent;
     }
 
     int max(int a, int b)
@@ -124,27 +124,27 @@ private:
         return a > b ? a : b;
     }
 
-    int add_t(Key key, Ptr<Value> value_ptr, std::weak_ptr<AVLNode<Key, Value, Ptr>> root)
+    int add_t(Key key, Value& value, std::weak_ptr<AVLNode<Key, Value, Ptr>> root)
     {
-        if (key < root->key)
+        if (key < root.lock()->key)
         {
-            if (root->left == nullptr)
+            if (root.lock()->left == nullptr)
             {
-                root->left = createAVLNode(key, value_ptr, nullptr, nullptr, root); // Should pass weak_ptr
-                return getHeight(root);
+                root.lock()->left = AVLNode<Key, Value, Ptr>::createAVLNode(key, value, nullptr, nullptr, root); // Should pass weak_ptr
+                return AVLNode<Key, Value, Ptr>::getHeight(root);
             }
-            add_t(key, value_ptr, root->left);
-            root->height = max(getHeight(root->left), getHeight(root->right)) + 1;
+            add_t(key, value, root.lock()->left);
+            root.lock()->height = max(AVLNode<Key, Value, Ptr>::getHeight(root.lock()->left), AVLNode<Key, Value, Ptr>::getHeight(root->right)) + 1;
             rotate(root);
         }
         else
         {
             if (root->right == nullptr)
             {
-                root->right = createAVLNode(key, value_ptr, nullptr, nullptr, root); // Should pass weak_ptr
+                root->right = createAVLNode(key, value, nullptr, nullptr, root);
                 return getHeight(root);
             }
-            add_t(key, value_ptr, root->right);
+            add_t(key, value, root->right);
             root->height = max(getHeight(root->left), getHeight(root->right)) + 1;
             rotate(root);
         }
@@ -222,16 +222,16 @@ private:
 public:
     int size;
     AVLTree<Key, Value, Ptr>() : root(nullptr), size(0) {}
-    void add(Key key, Ptr<Value> value_ptr)
+    void add(Key key, Value& value)
     {
         if (isEmpty()){
-            root = createAVLNode(key, value_ptr, nullptr, nullptr, root);
+            root = createAVLNode(key, value, nullptr, nullptr, root);
             root->parent = root;
         }
         if (getValue(key) != nullptr)
             throw std::runtime_error("Key already exist");
         size++;
-        add_t(key, value_ptr, root);
+        add_t(key, value, root);
     }
     int remove(Key key){
         auto root = getValue(key);
@@ -324,19 +324,19 @@ std::shared_ptr<Value[]> flattenvaluesArray(){
     std::weak_ptr<Value> getValue(Key key)
     {
         std::weak_ptr<AVLNode<Key, Value, Ptr>> node = root;
-        if (node == nullptr)
+        if (node.lock() == nullptr)
         {
             return nullptr;
         }
-        if (node->key == key)
+        if (node.lock()->key == key)
         {
             return std::weak_ptr<Value>(node->value);
         }
-        if (node->key < key)
+        if (node.lock()->key < key)
         {
             return getValue(node->right);
         }
-        return getValue(node->left);
+        return getValue(node.lock()->left);
     }
 
     bool isEmpty()
