@@ -35,7 +35,6 @@ public:
                                  std::shared_ptr<AVLNode<Key, Value, Ptr>> left, std::shared_ptr<AVLNode<Key, Value, Ptr>> right,
                                  std::weak_ptr<AVLNode<Key, Value, Ptr>> parent)
     {
-
         auto temp = std::make_shared(new AVLNode(key, value, left, right));
         temp->parent = std::weak_ptr<AVLNode<Key, Value, Ptr>>(temp);
         return temp;
@@ -130,25 +129,25 @@ private:
         {
             if (root.lock()->left == nullptr)
             {
-                root.lock()->left = AVLNode<Key, Value, Ptr>::createAVLNode(key, value, nullptr, nullptr, root); // Should pass weak_ptr
+                root.lock()->left = AVLNode<Key, Value, Ptr>::createAVLNode(key, value, std::shared_ptr<AVLNode<Key, Value, Ptr>>(nullptr), std::shared_ptr<AVLNode<Key, Value, Ptr>>(nullptr), root); // Should pass weak_ptr
                 return AVLNode<Key, Value, Ptr>::getHeight(root);
             }
             add_t(key, value, root.lock()->left);
-            root.lock()->height = max(AVLNode<Key, Value, Ptr>::getHeight(root.lock()->left), AVLNode<Key, Value, Ptr>::getHeight(root->right)) + 1;
+            root.lock()->height = max(AVLNode<Key, Value, Ptr>::getHeight(root.lock()->left), AVLNode<Key, Value, Ptr>::getHeight(root.lock()->right)) + 1;
             rotate(root);
         }
         else
         {
-            if (root->right == nullptr)
+            if (root.lock()->right == nullptr)
             {
-                root->right = createAVLNode(key, value, nullptr, nullptr, root);
-                return getHeight(root);
+                root.lock()->right = AVLNode<Key, Value, Ptr>::createAVLNode(key, value, nullptr, nullptr, root);
+                return AVLNode<Key, Value, Ptr>::getHeight(root);
             }
-            add_t(key, value, root->right);
-            root->height = max(getHeight(root->left), getHeight(root->right)) + 1;
+            add_t(key, value, root.lock()->right);
+            root.lock()->height = max(AVLNode<Key, Value, Ptr>::getHeight(root.lock()->left), getHeight(root.lock()->right)) + 1;
             rotate(root);
         }
-        return getHeight(root);
+        return AVLNode<Key, Value, Ptr>::getHeight(root);
     }
     
     int sortedArrayOfThisAndAnotherTree(std::shared_ptr<AVLNode<Key, Value, Ptr>[]>& out_nodeArray, std::weak_ptr<AVLTree<Key, Value, Ptr>> other_tree){
@@ -225,7 +224,7 @@ public:
     void add(Key key, Value& value)
     {
         if (isEmpty()){
-            root = createAVLNode(key, value, nullptr, nullptr, root);
+            root = AVLNode<Key, Value, Ptr>::createAVLNode(key, value, nullptr, nullptr, root);
             root->parent = root;
         }
         if (getValue(key) != nullptr)
