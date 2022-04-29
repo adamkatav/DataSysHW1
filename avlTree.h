@@ -151,19 +151,72 @@ private:
         return getHeight(root);
     }
     
-    int sortedArrayOfThisAndAnotherTree(std::shared_ptr<AVLNode<Key, Value, Ptr>[]>& out_nodeArray, std::weak_ptr<AVLTree<Key, Value, Ptr>> other_tree);
+    int sortedArrayOfThisAndAnotherTree(std::shared_ptr<AVLNode<Key, Value, Ptr>[]>& out_nodeArray, std::weak_ptr<AVLTree<Key, Value, Ptr>> other_tree){
+        int total_size = size + other_tree->size;
+        std::shared_ptr<AVLNode<Key, Value, Ptr>> this_flatten = flattenTree();
+        std::shared_ptr<AVLNode<Key, Value, Ptr>> other_flatten = other_tree->flattenTree();
+        int other_flatten_size = other_tree->size;
+        int this_flatten_size = size;
+        int this_it = 0;
+        int other_it = 0;
+        int i = 0;
+        while (this_it < this_flatten_size && other_it < other_flatten_size)
+        {
+            if ( this_flatten[this_it]->key < other_flatten[other_it]->key)
+            {
+                *(out_nodeArray)[i] = *(this_flatten)[this_it];
+                i++:
+                this_it++;
+            }
+            else
+            {
+                
+                *(out_nodeArray)[i] = *(other_flatten)[other_it];
+                i++:
+                other_it++;
+            }
+        }
+        while ( other_it==other_flatten_size && this_it < this_flatten_size)
+        {
+            *(out_nodeArray)[i] = *(this_flatten)[this_it];
+            i++:
+            this_it++;
+        }
+        while ( this_it==this_flatten_size && other_it < other_flatten_size )
+        {
+            *(out_nodeArray)[i] = *(other_flatten)[other_it];
+            i++:
+            other_it++;
+        }
+        return total_size;
+    }
 
-    void addAVLTree_t(AVLNode<Key, Value, Ptr>[] node_arr, int s, int e, AVLNode<Key, Value, Ptr> &new_node, AVLNode<Key, Value, Ptr> parent){
+    void flattenTree_t(std::weak_ptr<AVLNode<Key, Value, Ptr>[]> nodeArray, int i, std::weak_ptr<AVLNode<Key, Value, Ptr>> root){
+        if(root == nullptr){
+            return;
+        }
+        inOrder_t(func,as,root->left);
+        *(nodeArray)[i] = *root;
+        inOrder_t(func,as,root->right);
+    }
+
+    void addAVLTree_t(std::shared_ptr<AVLNode<Key, Value, Ptr>[]> node_arr, int s, int e, AVLNode<Key, Value, Ptr> &new_node, AVLNode<Key, Value, Ptr> parent){
         if(s > e){
             return;
         }
         int m = (s + e)/2;
-        new_node = std::make_shared(createAVLNode(node_arr[m]->key, node_arr[m]->value, nullptr, nullptr, parent));
-        addAVLTree_t(node_arr, s, m-1, new_node->left, new_node);
-        addAVLTree_t(node_arr, m+1, e, new_node->right, new_node);
+        new_node = std::make_shared(createAVLNode(*(node_arr)[m]->key, *(node_arr)[m]->value, nullptr, nullptr, parent));
+        addAVLTree_t(*node_arr, s, m-1, new_node->left, new_node);
+        addAVLTree_t(*node_arr, m+1, e, new_node->right, new_node);
+    }
+    std::shared_ptr<AVLNode<Key, Value, Ptr>[]> flattenTree(){
+        std::shared_ptr<AVLNode<Key, Value, Ptr>[]> nodeArray = std::make_shared(new AVLNode<Key, Value, Ptr>[size]);
+        flattenTree_t(nodeArray,0,root);
+        return nodeArray;
     }
 public:
-    AVLTree<Key, Value, Ptr>() : root(nullptr) {}
+    int size;
+    AVLTree<Key, Value, Ptr>() : root(nullptr), size(0) {}
     void add(Key key, Ptr<Value> value_ptr)
     {
         if (isEmpty()){
@@ -172,61 +225,64 @@ public:
         }
         if (getValue(key) != nullptr)
             throw std::runtime_error("Key already exist");
+        size++;
         add_t(key, value_ptr, root);
     }
     int remove(Key key){
-            auto root = getValue(key);
-            if(root == nullptr){
-                return -1;
-            }
-            auto new_root = getMin(root->right);
-            auto new_root_old_parent = root->parent;
-            if(new_root == nullptr){
-                if(root->parent->key < root->key){
-                    root->parent->right = root->left;
-                }
-                else{
-                    root->parent->left = root->left;
-                }
+        auto root = getValue(key);
+        if(root == nullptr){
+            return -1;
+        }
+        auto new_root = getMin(root->right);
+        auto new_root_old_parent = root->parent;
+        if(new_root == nullptr){
+            if(root->parent->key < root->key){
+                root->parent->right = root->left;
             }
             else{
-                
-                new_root_old_parent = new_root->parent;
-                //update root's parent
-                if(root->parent->key < root->key){
-                    root->parent->left = new_root;
-                }
-                else{
-                    root->parent->right = new_root;
-                }
-
-                //update new_root left and right
-                new_root->left = root->left;
-                root->left->parent = new_root;
-
-
-                //removing new_root from its parent
-                new_root->parent->left = new_root->right;
-
-                //Update new_root right
-                if(root->right->key != new_root ->key){
-                    new_root->right = root->right;
-                }
+                root->parent->left = root->left;
             }
-            if(root->key == root->parent->key){
-                new_root->parent = new_root;
+        }
+        else{
+            
+            new_root_old_parent = new_root->parent;
+            //update root's parent
+            if(root->parent->key < root->key){
+                root->parent->left = new_root;
             }
-            while (new_root_old_parent->key != new_root_old_parent->parent->key){
-                auto new_root_old_parent_parent = new_root_old_parent->parent;
-                rotate(new_root_old_parent);
-                new_root_old_parent = new_root_old_parent_parent;
+            else{
+                root->parent->right = new_root;
             }
+
+            //update new_root left and right
+            new_root->left = root->left;
+            root->left->parent = new_root;
+
+
+            //removing new_root from its parent
+            new_root->parent->left = new_root->right;
+
+            //Update new_root right
+            if(root->right->key != new_root ->key){
+                new_root->right = root->right;
+            }
+        }
+        if(root->key == root->parent->key){
+            new_root->parent = new_root;
+        }
+        while (new_root_old_parent->key != new_root_old_parent->parent->key){
+            auto new_root_old_parent_parent = new_root_old_parent->parent;
+            rotate(new_root_old_parent);
+            new_root_old_parent = new_root_old_parent_parent;
+        }
+        size--;
         return 0;
     }
     void addAVLTree(std::weak_ptr<AVLTree<Key, Value, Ptr>> other_tree){
-        std::shared_ptr<AVLNode<Key, Value, Ptr>[]> nodeArray;
+        std::shared_ptr<AVLNode<Key, Value, Ptr>[]> nodeArray = std::make_shared(new AVLNode<Key, Value, Ptr>[size + other_tree->size]);
         int nodeArray_size = sortedArrayOfThisAndAnotherTree(nodeArray, other_tree);
         addAVLTree_t(nodeArray, 0, nodeArray_size-1, root, root);
+        size += other_tree->size;
     }
     std::weak_ptr<AVLTree<Key, Value, Ptr>> getMin(std::shared_ptr<AVLTree<Key, Value, Ptr>> root){
         while(root->left != nullptr){
@@ -234,7 +290,6 @@ public:
         }
         return root;
     }
-
     std::weak_ptr<AVLTree<Key, Value, Ptr>> getMax(){
         auto temp = root;
         while(temp->right != nullptr){
@@ -243,6 +298,14 @@ public:
         return temp;
     }
 
+std::shared_ptr<Key[]> flattenKeysArray(){
+    auto nodeArray = flattenTree();
+    std::shared_ptr<Key[]> keyArray = std::make_shared(new Key[size]);
+    for(int i = 0; i < size; i++){
+        *(keyArray)[i] = *(nodeArray)[i];
+    }
+    return keyArray;
+}
 
     std::weak_ptr<Value> getValue(Key key)
     {
@@ -261,8 +324,7 @@ public:
         }
         return getValue(node->left);
     }
-    template <typename... Args>
-    void inOrder(std::function<void(Args...)> const &func, Args... as);
+
     bool isEmpty()
     {
         return root == nullptr;
