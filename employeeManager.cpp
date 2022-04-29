@@ -235,6 +235,102 @@ StatusType EmployeeManager::GetHighestEarner(int CompanyID, int *EmployeeID)
    return SUCCESS;
 }
 
+StatusType EmployeeManager::GetAllEmployeesBySalary(int CompanyID, int **Employees, int *NumOfEmployees)
+{
+   if ( CompanyID==0 || Employees==nullptr || NumOfEmployees==nullptr ) return INVALID_INPUT;
+   int size = 0;
+   std::shared_ptr<EmployeeKey[]> arr_ascending = nullptr;
+   if ( CompanyID > 0)
+   {
+      auto company = empty_companies->getValue(CompanyID);
+      if ( company.lock() != nullptr) return FAILURE; //this means that the company has no employees
+      company = non_empty_companies->getValue(CompanyID);
+      if ( company.lock() == nullptr ) return FAILURE; //this means that the company doesn't exist
+      size = company.lock()->employees_by_salary->size;
+      *NumOfEmployees = size;
+      *Employees = new int[size];
+      if (*Employees == nullptr ) return ALLOCATION_ERROR;
+      arr_ascending = company.lock()->employees_by_salary->flattenKeysArray();
+      for (int i=0 ; i<size ; i++)
+      {
+         *Employees[i] = arr_ascending[size-1-i].id;
+      }
+      return SUCCESS;
+   }
+   //if companyID < 0
+   size = dummy->employees_by_id->size;
+   *NumOfEmployees = size;
+   *Employees = new int[size];
+   if (*Employees == nullptr ) return ALLOCATION_ERROR;
+   arr_ascending = dummy->employees_by_salary->flattenKeysArray();
+   for (int i=0 ; i<size ; i++)
+   {
+      *Employees[i] = arr_ascending[size-1-i].id;
+   }
+   return SUCCESS;
+}
+
+StatusType EmployeeManager::GetHighestEarnerInEachCompany(int NumOfCompanies, int **Employees)
+{
+   if ( Employees==nullptr || NumOfCompanies<1 ) return INVALID_INPUT;
+   if ( non_empty_companies->size < NumOfCompanies ) return FAILURE;
+   int min_company = non_empty_companies->getMin().lock()->id;
+   int max_company = non_empty_companies->getMax().lock()->id;
+   std::shared_ptr<Company[]> company_values_arr = non_empty_companies->flattenvaluesArray(NumOfCompanies,min_company,max_company);
+   *Employees = new int[NumOfCompanies];
+   if (*Employees == nullptr ) return ALLOCATION_ERROR;
+   for (int i = 0 ; i < NumOfCompanies ; i++)
+   {
+      *Employees[i] = company_values_arr[i].highest_earner.lock()->id;
+   }
+   return SUCCESS;
+}
+
+StatusType EmployeeManager::GetNumEmployeesMatching(int CompanyID, int MinEmployeeID, int MaxEmployeeId,
+            int MinSalary, int MinGrade, int *TotalNumOfEmployees, int *NumOfEmployees)
+{
+   if ( CompanyID==0 || MinEmployeeID<0 || MaxEmployeeId<0 || MinSalary<0 || MinGrade<0 || TotalNumOfEmployees==nullptr
+      || NumOfEmployees==nullptr || MinEmployeeID>MaxEmployeeId) return INVALID_INPUT;
+
+   if ( CompanyID > 0 )
+   {
+      auto company = empty_companies->getValue(CompanyID);
+      if ( company.lock() != nullptr ) return FAILURE;
+      company = non_empty_companies->getValue(CompanyID);
+      if ( company.lock() == nullptr ) return FAILURE;
+      std::shared_ptr<Employee[]> employee_arr = company.lock()->employees_by_id->flattenvaluesArray(company.lock()->employees_by_id->size, MinEmployeeID, MaxEmployeeId);
+      int i = 0;
+      *TotalNumOfEmployees = 0;
+      *NumOfEmployees = 0;
+      while (employee_arr[i].id <= MaxEmployeeId)
+      {
+         *TotalNumOfEmployees ++;
+         if ( employee_arr[i].salary>=MinSalary && employee_arr[i].grade>=MinGrade)
+         {
+            *NumOfEmployees ++;
+         }
+         i++;
+      }
+      return SUCCESS;
+   }
+   if (dummy->employees_by_id->isEmpty()) return FAILURE;
+   std::shared_ptr<Employee[]> employee_arr_total = dummy->employees_by_id->flattenvaluesArray(dummy->employees_by_id->size, MinEmployeeID, MaxEmployeeId);
+      int j = 0;
+      *TotalNumOfEmployees = 0;
+      *NumOfEmployees = 0;
+      while (employee_arr_total[j].id <= MaxEmployeeId)
+      {
+         *TotalNumOfEmployees ++;
+         if ( employee_arr_total[j].salary>=MinSalary && employee_arr_total[j].grade>=MinGrade)
+         {
+            *NumOfEmployees ++;
+         }
+         j++;
+      }
+      return SUCCESS;
+
+}
+
 
 
 
