@@ -302,7 +302,7 @@ public:
         return getMin_t(root);
     }
 
-    std::weak_ptr<AVLTree<Key, Value, Ptr>> getMax_t(std::shared_ptr<AVLNode<Key, Value, Ptr>> root){
+    std::weak_ptr<Value> getMax_t(std::shared_ptr<AVLNode<Key, Value, Ptr>> root){
         auto temp = root;
         while(temp->right != nullptr){
             temp = temp->right;
@@ -310,7 +310,7 @@ public:
         return temp;
     }
     
-    std::weak_ptr<AVLTree<Key, Value, Ptr>> getMax(){
+    std::weak_ptr<Value> getMax(){
         return getMax_t(root);
     }
 
