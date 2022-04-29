@@ -2,8 +2,7 @@
 #define EMPLOYEE_MANAGER_H_
 #include <memory>
 #include "avlTree.h"
-#include "employee.h"
-#include "company.h"
+#include "company_employee.h"
 #include "library1.h"
 
 class EmployeeManager

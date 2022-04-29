@@ -165,39 +165,44 @@ private:
             if ( this_flatten[this_it]->key < other_flatten[other_it]->key)
             {
                 *(out_nodeArray)[i] = *(this_flatten)[this_it];
-                i++:
+                i++;
                 this_it++;
             }
             else
             {
                 
                 *(out_nodeArray)[i] = *(other_flatten)[other_it];
-                i++:
+                i++;
                 other_it++;
             }
         }
         while ( other_it==other_flatten_size && this_it < this_flatten_size)
         {
             *(out_nodeArray)[i] = *(this_flatten)[this_it];
-            i++:
+            i++;
             this_it++;
         }
         while ( this_it==this_flatten_size && other_it < other_flatten_size )
         {
             *(out_nodeArray)[i] = *(other_flatten)[other_it];
-            i++:
+            i++;
             other_it++;
         }
         return total_size;
     }
 
-    void flattenTree_t(std::weak_ptr<AVLNode<Key, Value, Ptr>[]> nodeArray, int i, std::weak_ptr<AVLNode<Key, Value, Ptr>> root){
+    void flattenTree_t(std::weak_ptr<AVLNode<Key, Value, Ptr>[]> nodeArray, int& i, std::weak_ptr<AVLNode<Key, Value, Ptr>> root, int max_num){
         if(root == nullptr){
             return;
         }
-        inOrder_t(func,as,root->left);
+        if (i == max_num)
+        {
+            return;
+        }
+        flattenTree_t(nodeArray,i,root->left,max_num);
         *(nodeArray)[i] = *root;
-        inOrder_t(func,as,root->right);
+        i++;
+        flattenTree_t(nodeArray,i,root->right,max_num);
     }
 
     void addAVLTree_t(std::shared_ptr<AVLNode<Key, Value, Ptr>[]> node_arr, int s, int e, AVLNode<Key, Value, Ptr> &new_node, AVLNode<Key, Value, Ptr> parent){
@@ -211,7 +216,7 @@ private:
     }
     std::shared_ptr<AVLNode<Key, Value, Ptr>[]> flattenTree(){
         std::shared_ptr<AVLNode<Key, Value, Ptr>[]> nodeArray = std::make_shared(new AVLNode<Key, Value, Ptr>[size]);
-        flattenTree_t(nodeArray,0,root);
+        flattenTree_t(nodeArray,0,root,size);
         return nodeArray;
     }
 public:
@@ -340,7 +345,7 @@ std::shared_ptr<Value[]> flattenvaluesArray(){
     }
 
 void clear(){
-    root = std::make_shared(nullptr);
+    root = std::make_shared<std::shared_ptr<AVLNode<Key, Value, Ptr>>>(nullptr);
     size = 0;
 }
 
