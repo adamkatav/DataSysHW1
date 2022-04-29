@@ -11,6 +11,7 @@ class EmployeeKey
     EmployeeKey(int id, int salary);
     bool operator<(const EmployeeKey& other_key);
     bool operator==(const EmployeeKey& other_key);
+    bool operator!=(const EmployeeKey& other_key);
 };
 
 class Company;

@@ -3,7 +3,7 @@
 
 #include <memory>
 #include <functional>
-#include <exception>
+#include <stdexcept>
 
 template <class Key, class Value, template <class> class Ptr>
 class AVLNode
@@ -15,8 +15,8 @@ public:
     std::shared_ptr<AVLNode<Key, Value, Ptr>> left, right;
     std::weak_ptr<AVLNode<Key, Value, Ptr>> parent;
 
-    AVLNode<Key, Value, Ptr>(Key key, Value value,
-                             std::shared_ptr<AVLNode<Key, Value, Ptr>> left, std::shared_ptr<AVLNode<Key, Value, Ptr>> right) : key(key), value(Ptr<Value>(value)), height(1), left(left), right(right) {}
+    AVLNode<Key, Value, Ptr>(Key key, Ptr<Value> value,
+                             std::shared_ptr<AVLNode<Key, Value, Ptr>> left, std::shared_ptr<AVLNode<Key, Value, Ptr>> right) : key(key), value(value), height(1), left(left), right(right) {}
 
     int getBalanceFactor()
     {
@@ -31,11 +31,11 @@ public:
         return (hleft > hright ? hleft : hright) + 1;
     }
 
-    static std::shared_ptr<AVLNode<Key, Value, Ptr>> createAVLNode(Key key, Value &value,
+    static std::shared_ptr<AVLNode<Key, Value, Ptr>> createAVLNode(Key key, Ptr<Value> value,
                                  std::shared_ptr<AVLNode<Key, Value, Ptr>> left, std::shared_ptr<AVLNode<Key, Value, Ptr>> right,
                                  std::weak_ptr<AVLNode<Key, Value, Ptr>> parent)
     {
-        auto temp = std::make_shared(new AVLNode(key, value, left, right));
+        auto temp = std::make_shared(AVLNode(key, value, left, right));
         temp->parent = std::weak_ptr<AVLNode<Key, Value, Ptr>>(temp);
         return temp;
     }
@@ -123,7 +123,7 @@ private:
         return a > b ? a : b;
     }
 
-    int add_t(Key key, Value& value, std::weak_ptr<AVLNode<Key, Value, Ptr>> root)
+    int add_t(Key key, Ptr<Value> value, std::weak_ptr<AVLNode<Key, Value, Ptr>> root)
     {
         if (key < root.lock()->key)
         {
@@ -221,61 +221,62 @@ private:
 public:
     int size;
     AVLTree<Key, Value, Ptr>() : root(nullptr), size(0) {}
-    void add(Key key, Value& value)
+    void add(Key key, Ptr<Value> value)
     {
         if (isEmpty()){
             root = AVLNode<Key, Value, Ptr>::createAVLNode(key, value, nullptr, nullptr, root);
             root->parent = root;
         }
-        if (getValue(key) != nullptr)
+        if (getValue(key).lock() != nullptr){
             throw std::runtime_error("Key already exist");
+        }
         size++;
         add_t(key, value, root);
     }
     int remove(Key key){
-        auto root = getValue(key);
+        auto root = getNode(key).lock();
         if(root == nullptr){
             return -1;
         }
-        auto new_root = getMin(root->right);
+        auto new_root = getMin_t(root->right);
         auto new_root_old_parent = root->parent;
-        if(new_root == nullptr){
-            if(root->parent->key < root->key){
-                root->parent->right = root->left;
+        if(new_root.lock() == nullptr){
+            if(root->parent.lock()->key < root->key){
+                root->parent.lock()->right = root->left;
             }
             else{
-                root->parent->left = root->left;
+                root->parent.lock()->left = root->left;
             }
         }
         else{
             
-            new_root_old_parent = new_root->parent;
+            new_root_old_parent = new_root.lock()->parent;
             //update root's parent
-            if(root->parent->key < root->key){
-                root->parent->left = new_root;
+            if(root->parent.lock()->key < root->key){
+                root->parent.lock()->left = new_root.lock();
             }
             else{
-                root->parent->right = new_root;
+                root->parent.lock()->right = new_root.lock();
             }
 
             //update new_root left and right
-            new_root->left = root->left;
+            new_root.lock()->left = root->left;
             root->left->parent = new_root;
 
 
             //removing new_root from its parent
-            new_root->parent->left = new_root->right;
+            new_root.lock()->parent.lock()->left = new_root.lock()->right;
 
             //Update new_root right
-            if(root->right->key != new_root ->key){
-                new_root->right = root->right;
+            if(root->right->key != new_root.lock()->key){
+                new_root.lock()->right = root->right;
             }
         }
-        if(root->key == root->parent->key){
-            new_root->parent = new_root;
+        if(root->key == root->parent.lock()->key){
+            new_root.lock()->parent = new_root;
         }
-        while (new_root_old_parent->key != new_root_old_parent->parent->key){
-            auto new_root_old_parent_parent = new_root_old_parent->parent;
+        while (new_root_old_parent.lock()->key != new_root_old_parent.lock()->parent.lock()->key){
+            auto new_root_old_parent_parent = new_root_old_parent.lock()->parent;
             rotate(new_root_old_parent);
             new_root_old_parent = new_root_old_parent_parent;
         }
@@ -288,18 +289,28 @@ public:
         addAVLTree_t(nodeArray, 0, nodeArray_size-1, root, root);
         size += other_tree->size;
     }
-    std::weak_ptr<AVLTree<Key, Value, Ptr>> getMin(std::shared_ptr<AVLTree<Key, Value, Ptr>> root){
+
+    std::weak_ptr<AVLNode<Key, Value, Ptr>> getMin_t(std::shared_ptr<AVLNode<Key, Value, Ptr>> root){
         while(root->left != nullptr){
             root = root->left;
         }
         return root;
     }
-    std::weak_ptr<AVLTree<Key, Value, Ptr>> getMax(){
+
+    std::weak_ptr<AVLTree<Key, Value, Ptr>> getMin(){
+        return getMin_t(root);
+    }
+
+    std::weak_ptr<AVLTree<Key, Value, Ptr>> getMax_t(std::shared_ptr<AVLNode<Key, Value, Ptr>> root){
         auto temp = root;
         while(temp->right != nullptr){
             temp = temp->right;
         }
         return temp;
+    }
+    
+    std::weak_ptr<AVLTree<Key, Value, Ptr>> getMax(){
+        return getMax_t(root);
     }
 
 std::shared_ptr<Key[]> flattenKeysArray(){
@@ -320,22 +331,36 @@ std::shared_ptr<Value[]> flattenvaluesArray(){
     return valueArray;
 }
 
+    std::weak_ptr<Value> getValue_t(Key key, std::weak_ptr<AVLNode<Key, Value, Ptr>> root){
+        auto p = root.lock();
+        if(p == nullptr)
+            return std::weak_ptr<Value>();
+        if(p->key == key)
+            return std::weak_ptr<Value>(p->value);
+        if(p->key < key)
+            return getValue_t(key, p->right);
+        return getValue_t(key, p->left);
+    }
+
     std::weak_ptr<Value> getValue(Key key)
     {
-        std::weak_ptr<AVLNode<Key, Value, Ptr>> node = root;
-        if (node.lock() == nullptr)
-        {
-            return nullptr;
-        }
-        if (node.lock()->key == key)
-        {
-            return std::weak_ptr<Value>(node->value);
-        }
-        if (node.lock()->key < key)
-        {
-            return getValue(node->right);
-        }
-        return getValue(node.lock()->left);
+        return getValue_t(key, root);
+    }
+
+    std::weak_ptr<AVLNode<Key, Value, Ptr>> getNode_t(Key key, std::weak_ptr<AVLNode<Key, Value, Ptr>> root){
+        auto p = root.lock();
+        if(p == nullptr)
+            return std::weak_ptr<Value>();
+        if(p->key == key)
+            return p;
+        if(p->key < key)
+            return getNode_t(key, p->right);
+        return getNode_t(key, p->left);
+    }
+
+    std::weak_ptr<AVLNode<Key, Value, Ptr>> getNode(Key key)
+    {
+        return getNode_t(key, root);
     }
 
     bool isEmpty()
