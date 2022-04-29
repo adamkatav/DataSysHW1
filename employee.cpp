@@ -22,9 +22,8 @@ bool EmployeeKey::operator==(const EmployeeKey& other_key)
     return (id == other_key.id);
 }
 
-Employee::Employee(int id, int salary, int grade, std::weak_ptr<Company> employer,
-        std::weak_ptr<Company> dummy): id(id), salary(salary), grade(grade), 
-        employer(employer), dummy(dummy){}
+Employee::Employee(int id, int salary, int grade, std::weak_ptr<Company> employer): 
+                    id(id), salary(salary), grade(grade), employer(employer){}
 
 void Employee::promote(int salary_increase, bool bump_grade)
 {

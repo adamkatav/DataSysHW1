@@ -11,14 +11,13 @@ class Company
 
     public:
     const int id;
-    std::shared_ptr<AVLTree<EmployeeKey, Employee, std::weak_ptr>> employees;
     std::weak_ptr<Employee> highest_earner;
+    std::shared_ptr<AVLTree<EmployeeKey, Employee, std::weak_ptr>> employees;
 
-    Company(int value, int id, std::shared_ptr<AVLTree<EmployeeKey, Employee, std::weak_ptr>> employees, 
-            std::weak_ptr<Employee> highest_earner);
+    Company(int value, int id, std::weak_ptr<Employee> highest_earner,
+            std::shared_ptr<AVLTree<EmployeeKey, Employee, std::weak_ptr>> employees);
     int getValue();
     void increaseValue(int amount);
-    
 };
 
 
