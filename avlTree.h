@@ -150,7 +150,7 @@ private:
         return AVLNode<Key, Value, Ptr>::getHeight(root);
     }
     
-    int sortedArrayOfThisAndAnotherTree(std::shared_ptr<AVLNode<Key, Value, Ptr>[]>& out_nodeArray, std::weak_ptr<AVLTree<Key, Value, Ptr>> other_tree){
+    int sortedArrayOfThisAndAnotherTree(std::unique_ptr<AVLNode<Key, Value, Ptr>[]>& out_nodeArray, std::weak_ptr<AVLTree<Key, Value, Ptr>> other_tree){
         int total_size = size + other_tree->size;
         std::shared_ptr<AVLNode<Key, Value, Ptr>> this_flatten = flattenTree();
         std::shared_ptr<AVLNode<Key, Value, Ptr>> other_flatten = other_tree->flattenTree();
@@ -163,27 +163,27 @@ private:
         {
             if ( this_flatten[this_it]->key < other_flatten[other_it]->key)
             {
-                *(out_nodeArray)[i] = *(this_flatten)[this_it];
+                *out_nodeArray[i] = *(this_flatten)[this_it];
                 i++;
                 this_it++;
             }
             else
             {
                 
-                *(out_nodeArray)[i] = *(other_flatten)[other_it];
+                *out_nodeArray[i] = *(other_flatten)[other_it];
                 i++;
                 other_it++;
             }
         }
         while ( other_it==other_flatten_size && this_it < this_flatten_size)
         {
-            *(out_nodeArray)[i] = *(this_flatten)[this_it];
+            *out_nodeArray[i] = *(this_flatten)[this_it];
             i++;
             this_it++;
         }
         while ( this_it==this_flatten_size && other_it < other_flatten_size )
         {
-            *(out_nodeArray)[i] = *(other_flatten)[other_it];
+            *out_nodeArray[i] = *(other_flatten)[other_it];
             i++;
             other_it++;
         }
@@ -204,14 +204,14 @@ private:
         flattenTree_t(nodeArray,i,root->right,max_num);
     }
 
-    void addAVLTree_t(std::shared_ptr<AVLNode<Key, Value, Ptr>[]> node_arr, int s, int e, AVLNode<Key, Value, Ptr> &new_node, AVLNode<Key, Value, Ptr> parent){
+    void addAVLTree_t(std::unique_ptr<AVLNode<Key, Value, Ptr>[]>& node_arr, int s, int e, AVLNode<Key, Value, Ptr> &new_node, AVLNode<Key, Value, Ptr> parent){
         if(s > e){
             return;
         }
         int m = (s + e)/2;
         new_node = std::make_shared(createAVLNode(*(node_arr)[m]->key, *(node_arr)[m]->value, nullptr, nullptr, parent));
-        addAVLTree_t(*node_arr, s, m-1, new_node->left, new_node);
-        addAVLTree_t(*node_arr, m+1, e, new_node->right, new_node);
+        addAVLTree_t(node_arr, s, m-1, new_node->left, new_node);
+        addAVLTree_t(node_arr, m+1, e, new_node->right, new_node);
     }
     std::shared_ptr<AVLNode<Key, Value, Ptr>[]> flattenTree(){
         std::shared_ptr<AVLNode<Key, Value, Ptr>[]> nodeArray = std::make_shared(new AVLNode<Key, Value, Ptr>[size]);
@@ -284,7 +284,8 @@ public:
         return 0;
     }
     void addAVLTree(std::weak_ptr<AVLTree<Key, Value, Ptr>> other_tree){
-        std::shared_ptr<AVLNode<Key, Value, Ptr>[]> nodeArray = std::make_shared(new AVLNode<Key, Value, Ptr>[size + other_tree->size]);
+        AVLNode<Key, Value, std::weak_ptr> a;
+        std::unique_ptr<AVLNode<Key, Value, Ptr>[]> nodeArray(new AVLNode<Key, Value, Ptr>[size + other_tree.lock()->size]);
         int nodeArray_size = sortedArrayOfThisAndAnotherTree(nodeArray, other_tree);
         addAVLTree_t(nodeArray, 0, nodeArray_size-1, root, root);
         size += other_tree->size;
@@ -350,7 +351,7 @@ std::shared_ptr<Value[]> flattenvaluesArray(){
     std::weak_ptr<AVLNode<Key, Value, Ptr>> getNode_t(Key key, std::weak_ptr<AVLNode<Key, Value, Ptr>> root){
         auto p = root.lock();
         if(p == nullptr)
-            return std::weak_ptr<Value>();
+            return std::weak_ptr<AVLNode<Key, Value, Ptr>>();
         if(p->key == key)
             return p;
         if(p->key < key)

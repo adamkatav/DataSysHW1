@@ -85,7 +85,7 @@ StatusType EmployeeManager::RemoveCompany(int CompanyID)
 StatusType EmployeeManager::RemoveEmployee(int EmployeeID)
 {
    if ( EmployeeID <= 0 ) return INVALID_INPUT;
-   std::shared_ptr<Employee> employee = std::make_shared<Employee>(employees->getValue(EmployeeID));
+   std::shared_ptr<Employee> employee = employees->getValue(EmployeeID).lock();
    if( employee == nullptr ) return FAILURE;
    EmployeeKey key = EmployeeKey(employee->id, employee->salary);
    employee->employer.lock()->employees_by_salary->remove(key); //catch exception
