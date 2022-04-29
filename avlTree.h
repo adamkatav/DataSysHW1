@@ -307,6 +307,15 @@ std::shared_ptr<Key[]> flattenKeysArray(){
     return keyArray;
 }
 
+std::shared_ptr<Value[]> flattenvaluesArray(){
+    auto nodeArray = flattenTree();
+    std::shared_ptr<Value[]> valueArray = std::make_shared(new Value[size]);
+    for(int i = 0; i < size; i++){
+        *(valueArray)[i] = *(nodeArray)[i];
+    }
+    return valueArray;
+}
+
     std::weak_ptr<Value> getValue(Key key)
     {
         std::weak_ptr<AVLNode<Key, Value, Ptr>> node = root;
@@ -329,5 +338,11 @@ std::shared_ptr<Key[]> flattenKeysArray(){
     {
         return root == nullptr;
     }
+
+void clear(){
+    root = std::make_shared(nullptr);
+    size = 0;
+}
+
 };
 #endif
