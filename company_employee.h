@@ -6,9 +6,12 @@
 class EmployeeKey
 {
     public:
-    const int id;
+    int id;
     int salary;
     EmployeeKey(int id, int salary);
+    EmployeeKey(const EmployeeKey& other_key) = default;
+    EmployeeKey& operator=(const EmployeeKey& other_key) = default;
+    ~EmployeeKey() = default;
     bool operator<(const EmployeeKey& other_key);
     bool operator==(const EmployeeKey& other_key);
     bool operator!=(const EmployeeKey& other_key);
@@ -19,12 +22,15 @@ class Company;
 class Employee
 {
     public:
-    const int id;
+    int id;
     int salary;
     int grade;
     std::weak_ptr<Company> employer;
 
     Employee(int id, int salary, int grade, std::weak_ptr<Company> employer);
+    Employee(const Employee& other_employee) = default;
+    Employee& operator=(const Employee& other_employee) = default;
+    ~Employee() = default;
     void promote(int salary_increase, bool bump_grade);
 };
 
@@ -34,7 +40,7 @@ class Company
     int value;
 
     public:
-    const int id;
+    int id;
     std::weak_ptr<Employee> highest_earner;
     std::shared_ptr<AVLTree<EmployeeKey, Employee, std::weak_ptr>> employees_by_salary;
     std::shared_ptr<AVLTree<int, Employee, std::weak_ptr>> employees_by_id;
@@ -42,6 +48,9 @@ class Company
     Company(int value, int id, std::weak_ptr<Employee> highest_earner,
             std::shared_ptr<AVLTree<EmployeeKey, Employee, std::weak_ptr>> employees,
             std::shared_ptr<AVLTree<int, Employee, std::weak_ptr>> employees_by_id);
+    Company(const Company& other_company) = default;
+    Company& operator=(const Company& other_company) = default;
+    ~Company() = default;
     int getValue();
     void increaseValue(int amount);
 };
