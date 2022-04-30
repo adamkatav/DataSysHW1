@@ -11,13 +11,13 @@ class AVLNode
 public:
     Key key;
     Ptr<Value> value;
-    int height;
     std::shared_ptr<AVLNode<Key, Value, Ptr>> left, right;
     std::weak_ptr<AVLNode<Key, Value, Ptr>> parent;
+    int height;
 
     AVLNode<Key, Value, Ptr>(Key key, Ptr<Value> value,
-                             std::shared_ptr<AVLNode<Key, Value, Ptr>> left, std::shared_ptr<AVLNode<Key, Value, Ptr>> right) : key(key), value(value), height(1), left(left), right(right) {}
-    AVLNode<Key, Value, Ptr>(const AVLNode<Key, Value, Ptr>& other_node) = default;
+                             std::shared_ptr<AVLNode<Key, Value, Ptr>> left, std::shared_ptr<AVLNode<Key, Value, Ptr>> right,int height=1) : key(key), value(value), left(left), right(right), height(height) {}
+    AVLNode<Key, Value, Ptr>():key(),value(Ptr<Value>()),left(std::make_shared<AVLNode<Key, Value, Ptr>>()),right(std::make_shared<AVLNode<Key, Value, Ptr>>()),parent(std::make_shared<AVLNode<Key, Value, Ptr>>()),height(-1){}
     AVLNode<Key, Value, Ptr>& operator=(const AVLNode<Key, Value, Ptr>& other_node) = default;
     ~AVLNode<Key, Value, Ptr>() = default;
     int getBalanceFactor()
@@ -37,7 +37,7 @@ public:
                                  std::shared_ptr<AVLNode<Key, Value, Ptr>> left, std::shared_ptr<AVLNode<Key, Value, Ptr>> right,
                                  std::weak_ptr<AVLNode<Key, Value, Ptr>> parent)
     {
-        auto temp = std::make_shared<AVLNode<Key,Value,Ptr>>(new AVLNode<Key,Value,Ptr>(key, value, left, right));
+        auto temp = std::make_shared<AVLNode<Key,Value,Ptr>>(AVLNode<Key,Value,Ptr>(key, value, left, right));
         temp->parent = std::weak_ptr<AVLNode<Key, Value, Ptr>>(temp);
         return temp;
     }
@@ -192,11 +192,11 @@ private:
         return total_size;
     }
 
-    void flattenTree_t(std::weak_ptr<AVLNode<Key, Value, Ptr>> nodeArray[], int& i, std::weak_ptr<AVLNode<Key, Value, Ptr>> root, int max_num, Key min, Key max){
+    void flattenTree_t(std::weak_ptr<AVLNode<Key, Value, Ptr>[]> nodeArray, int* i, std::weak_ptr<AVLNode<Key, Value, Ptr>> root, int max_num, Key min, Key max){
         if(root.lock() == nullptr){
             return;
         }
-        if (i == max_num)
+        if (*i == max_num)
         {
             return;
         }
@@ -211,29 +211,33 @@ private:
             return;
         }
         flattenTree_t(nodeArray,i,root.lock()->left,max_num, min, max);
-        nodeArray[i] = root;
-        i++;
+        nodeArray.lock()[*i] = *(root.lock());
+        *i += 1;
         flattenTree_t(nodeArray,i,root.lock()->right,max_num, min, max);
     }
 
-    void addAVLTree_t(std::unique_ptr<AVLNode<Key, Value, Ptr>[]>& node_arr, int s, int e, AVLNode<Key, Value, Ptr> &new_node, AVLNode<Key, Value, Ptr> parent){
+    void addAVLTree_t(std::unique_ptr<AVLNode<Key, Value, Ptr>[]>& node_arr, int s, int e, std::shared_ptr<AVLNode<Key, Value, Ptr>> new_node, std::shared_ptr<AVLNode<Key, Value, Ptr>> parent){
         if(s > e){
             return;
         }
         int m = (s + e)/2;
-        new_node = *(AVLNode<Key, Value, Ptr>::createAVLNode(node_arr[m].key, node_arr[m].value, nullptr, nullptr, std::make_shared<AVLNode<Key, Value, Ptr>>(parent)));
-        addAVLTree_t(node_arr, s, m-1, *(new_node.left), new_node);
-        addAVLTree_t(node_arr, m+1, e, *(new_node.right), new_node);
+        new_node = AVLNode<Key, Value, Ptr>::createAVLNode(node_arr[m].key, node_arr[m].value, nullptr, nullptr, parent);
+        addAVLTree_t(node_arr, s, m-1, new_node->left, new_node);
+        addAVLTree_t(node_arr, m+1, e, new_node->right, new_node);
     }
     std::shared_ptr<AVLNode<Key, Value, Ptr>[]> flattenTree(){
-        std::shared_ptr<AVLNode<Key, Value, Ptr>> nodeArray[] = std::make_shared<AVLNode<Key, Value, Ptr>>(new AVLNode<Key, Value, Ptr>[size]);
-        flattenTree_t(nodeArray,0,root,size,getMin_t().lock()->key, getMax_t().lock()->key);
+        std::shared_ptr<AVLNode<Key, Value, Ptr>[]> nodeArray = std::make_shared<AVLNode<Key, Value, Ptr>[]>(new AVLNode<Key, Value, Ptr>[size]);
+        int* i;
+        *i = 0;
+        flattenTree_t(nodeArray,i,root,size,getMin_t(root).lock()->key, getMax_t(root).lock()->key);
         return nodeArray;
     }
 
     std::shared_ptr<AVLNode<Key, Value, Ptr>[]> flattenTreeWithMaxNum(int max_num, Key min, Key max){
-        std::shared_ptr<AVLNode<Key, Value, Ptr>[]> nodeArray = std::make_shared(new AVLNode<Key, Value, Ptr>[size]);
-        flattenTree_t(nodeArray,0,root,max_num,min,max);
+        std::shared_ptr<AVLNode<Key, Value, Ptr>[]> nodeArray = std::make_shared<AVLNode<Key, Value, Ptr>[]>(new AVLNode<Key, Value, Ptr>[size]);
+        int* i;
+        *i = 0;
+        flattenTree_t(nodeArray,i,root,max_num,min,max);
         return nodeArray;
     }
 public:
@@ -317,7 +321,8 @@ public:
     }
 
     std::weak_ptr<Value> getMin(){
-        return std::make_shared((root).lock()->value);
+
+        return std::make_shared<Value>(getMax_t(root).lock()->value);
     }
 
     std::weak_ptr<AVLNode<Key, Value, Ptr>> getMax_t(std::shared_ptr<AVLNode<Key, Value, Ptr>> root){
@@ -329,23 +334,23 @@ public:
     }
     
     std::weak_ptr<Value> getMax(){
-        return std::make_shared(getMax_t(root).lock()->value);
+        return std::make_shared<Value>(getMax_t(root).lock()->value);
     }
 
 std::shared_ptr<Key[]> flattenKeysArray(){
     auto nodeArray = flattenTree();
-    std::shared_ptr<Key[]> keyArray = std::make_shared<Key>(new Key[size]);
+    std::shared_ptr<Key[]> keyArray = std::make_shared<Key[]>(new Key[size]);
     for(int i = 0; i < size; i++){
-        *(keyArray)[i] = *(nodeArray)[i];
+        keyArray[i] = nodeArray[i].key;
     }
     return keyArray;
 }
 
 std::shared_ptr<Value[]> flattenvaluesArray(int desired_size, Key min, Key max){
     auto nodeArray = flattenTreeWithMaxNum(desired_size,min,max);
-    std::shared_ptr<Value[]> valueArray = std::make_shared<Value>(new Value[desired_size]);
+    std::shared_ptr<Value[]> valueArray = std::make_shared<Value[]>(new Value[desired_size]);
     for(int i = 0; i < desired_size; i++){
-        *(valueArray)[i] = *(nodeArray)[i];
+        valueArray[i] = *(std::make_shared<Value>(nodeArray[i].value));
     }
     return valueArray;
 }
@@ -388,7 +393,7 @@ std::shared_ptr<Value[]> flattenvaluesArray(int desired_size, Key min, Key max){
     }
 
 void clear(){
-    root = std::make_shared<std::shared_ptr<AVLNode<Key, Value, Ptr>>>(nullptr);
+    root = std::make_shared<AVLNode<Key, Value, Ptr>>(nullptr);
     size = 0;
 }
 
