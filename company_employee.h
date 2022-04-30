@@ -6,9 +6,11 @@
 class EmployeeKey
 {
     public:
-    const int id;
+    int id;
     int salary;
     EmployeeKey(int id, int salary);
+    EmployeeKey();
+    EmployeeKey(const EmployeeKey& emp) = default;
     bool operator<(const EmployeeKey& other_key);
     bool operator==(const EmployeeKey& other_key);
     bool operator!=(const EmployeeKey& other_key);

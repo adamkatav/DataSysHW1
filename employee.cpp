@@ -3,6 +3,8 @@
 #include <memory>
 
 EmployeeKey::EmployeeKey(int id, int salary):id(id),salary(salary){}
+//Adam
+EmployeeKey::EmployeeKey(){}
 
 bool EmployeeKey::operator<(const EmployeeKey& other_key)
 {
