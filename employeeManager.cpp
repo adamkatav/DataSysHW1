@@ -260,8 +260,8 @@ StatusType EmployeeManager::GetAllEmployeesBySalary(int CompanyID, int **Employe
    //if companyID < 0
    size = dummy->employees_by_id->size;
    *NumOfEmployees = size;
-   *Employees = new int[size];
-   if (*Employees == nullptr ) return ALLOCATION_ERROR;
+   // *Employees = new int[size];
+   // if (*Employees == nullptr ) return ALLOCATION_ERROR;
    arr_ascending = dummy->employees_by_salary->flattenKeysArray();
    for (int i=0 ; i<size ; i++)
    {
@@ -277,8 +277,8 @@ StatusType EmployeeManager::GetHighestEarnerInEachCompany(int NumOfCompanies, in
    int min_company = non_empty_companies->getMin().lock()->id;
    int max_company = non_empty_companies->getMax().lock()->id;
    std::shared_ptr<Company[]> company_values_arr = non_empty_companies->flattenvaluesArray(NumOfCompanies,min_company,max_company);
-   *Employees = new int[NumOfCompanies];
-   if (*Employees == nullptr ) return ALLOCATION_ERROR;
+   // *Employees = new int[NumOfCompanies];
+   // if (*Employees == nullptr ) return ALLOCATION_ERROR;
    for (int i = 0 ; i < NumOfCompanies ; i++)
    {
       *Employees[i] = company_values_arr[i].highest_earner.lock()->id;

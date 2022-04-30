@@ -198,8 +198,14 @@ private:
         {
             return;
         }
-        if (root.lock()->key < min || root.lock()->key > max)
+        if (root.lock()->key < min)
         {
+            flattenTree_t(nodeArray,i,root.lock()->right,max_num, min, max);
+            return;
+        }
+        if (root.lock()->key > max)
+        {
+            flattenTree_t(nodeArray,i,root.lock()->left,max_num, min, max);
             return;
         }
         flattenTree_t(nodeArray,i,root.lock()->left,max_num, min, max);
