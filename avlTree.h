@@ -324,23 +324,23 @@ public:
         return getMax_t(root);
     }
 
-std::shared_ptr<Key[]> flattenKeysArray(){
-    auto nodeArray = flattenTree();
-    std::shared_ptr<Key[]> keyArray = std::make_shared(new Key[size]);
-    for(int i = 0; i < size; i++){
-        *(keyArray)[i] = *(nodeArray)[i];
+    std::unique_ptr<Key[]> flattenKeysArray(){
+        auto nodeArray = flattenTree();
+        std::unique_ptr<Key[]> keyArray = std::unique_ptr<Key[]>(new Key[size]);
+        for(int i = 0; i < size; i++){
+            (keyArray)[i] = (nodeArray)[i];
+        }
+        return keyArray;
     }
-    return keyArray;
-}
 
-std::shared_ptr<Value[]> flattenvaluesArray(){
-    auto nodeArray = flattenTree();
-    std::shared_ptr<Value[]> valueArray = std::make_shared(new Value[size]);
-    for(int i = 0; i < size; i++){
-        *(valueArray)[i] = *(nodeArray)[i];
+    std::unique_ptr<Value[]> flattenvaluesArray(){
+        auto nodeArray = flattenTree();
+        std::unique_ptr<Value[]> valueArray = std::unique_ptr<Value[]>(new Value[size]);
+        for(int i = 0; i < size; i++){
+            (valueArray)[i] = (nodeArray)[i];
+        }
+        return valueArray;
     }
-    return valueArray;
-}
 
     std::weak_ptr<Value> getValue_t(Key key, std::weak_ptr<AVLNode<Key, Value, Ptr>> root){
         auto p = root.lock();
