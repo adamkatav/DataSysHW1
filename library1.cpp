@@ -1,6 +1,5 @@
 #include "library1.h"
 #include "employeeManager.h"
-
 void* Init() {
     EmployeeManager *DS = new EmployeeManager();
     return (void*)DS;
@@ -62,31 +61,24 @@ StatusType GetHighestEarner(void *DS, int CompanyID, int *EmployeeID){
 
 StatusType GetAllEmployeesBySalary(void *DS, int CompanyID, int **Employees, int *NumOfEmployees){
     if (DS == NULL) return INVALID_INPUT;
-    int size = ((EmployeeManager *) DS)->dummy->employees_by_id->size;
-    *Employees = (int*)malloc(size*sizeof(int));
-    if(*Employees == NULL) return ALLOCATION_ERROR;
     return ((EmployeeManager *) DS)-> GetAllEmployeesBySalary(CompanyID, Employees, NumOfEmployees);
 }
 
 StatusType GetHighestEarnerInEachCompany(void *DS, int NumOfCompanies, int **Employees){
     if (DS == NULL) return INVALID_INPUT;
-    *Employees = (int*)malloc(NumOfCompanies*sizeof(int));
-    if(*Employees == NULL) return ALLOCATION_ERROR;
     return ((EmployeeManager *) DS)-> GetHighestEarnerInEachCompany(NumOfCompanies, Employees);
+
 }
 
 StatusType GetNumEmployeesMatching(void *DS, int CompanyID, int MinEmployeeID, int MaxEmployeeId,
-            int MinSalary, int MinGrade, int *TotalNumOfEmployees, int *NumOfEmployees){
+        int MinSalary, int MinGrade, int *TotalNumOfEmployees, int *NumOfEmployees){
     if (DS == NULL) return INVALID_INPUT;
     return ((EmployeeManager *) DS)-> GetNumEmployeesMatching(CompanyID, MinEmployeeID, MaxEmployeeId,
-            MinSalary, MinGrade, TotalNumOfEmployees, NumOfEmployees);
-}
+        MinSalary, MinGrade, TotalNumOfEmployees, NumOfEmployees);
+
+        }
 
 void Quit(void** DS){
-    if(DS==NULL || *DS == NULL)
-    {
-        return;
-    }
-    delete *((EmployeeManager**)DS);
-    *DS = nullptr;
+    if(DS != NULL)
+        *DS = NULL;
 }

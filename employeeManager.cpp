@@ -8,7 +8,7 @@
 EmployeeManager::EmployeeManager(): 
    empty_companies(std::unique_ptr<AVLTree<int,Company,std::shared_ptr>>(new AVLTree<int,Company,std::shared_ptr>())),
    non_empty_companies(std::unique_ptr<AVLTree<int,Company,std::shared_ptr>>(new AVLTree<int,Company,std::shared_ptr>())),
-   employees(std::unique_ptr<AVLTree<int,Employee,std::shared_ptr>>(new AVLTree<int,Employee,std::shared_ptr>())),
+   //employees(std::unique_ptr<AVLTree<int,Employee,std::shared_ptr>>(new AVLTree<int,Employee,std::shared_ptr>())),
    dummy(std::unique_ptr<Company>(new Company(0,0,std::weak_ptr<Employee>(),
    std::make_shared<AVLTree<EmployeeKey, Employee, std::weak_ptr>>(AVLTree<EmployeeKey, Employee, std::weak_ptr>()),
    std::make_shared<AVLTree<int, Employee, std::weak_ptr>>(AVLTree<int, Employee, std::weak_ptr>())))){}
@@ -274,14 +274,14 @@ StatusType EmployeeManager::GetHighestEarnerInEachCompany(int NumOfCompanies, in
 {
    if ( Employees==nullptr || NumOfCompanies<1 ) return INVALID_INPUT;
    if ( non_empty_companies->size < NumOfCompanies ) return FAILURE;
-   int min_company = non_empty_companies->getMin().lock()->id;
-   int max_company = non_empty_companies->getMax().lock()->id;
-   std::shared_ptr<Company[]> company_values_arr = non_empty_companies->flattenvaluesArray(NumOfCompanies,min_company,max_company);
+   int min_company = non_empty_companies->getMin()->id;
+   int max_company = non_empty_companies->getMax()->id;
+   auto company_values_arr = non_empty_companies->flattenvaluesArray(NumOfCompanies,min_company,max_company);
    // *Employees = new int[NumOfCompanies];
    // if (*Employees == nullptr ) return ALLOCATION_ERROR;
    for (int i = 0 ; i < NumOfCompanies ; i++)
    {
-      *Employees[i] = company_values_arr[i].highest_earner.lock()->id;
+      *Employees[i] = company_values_arr[i]->highest_earner.lock()->id;
    }
    return SUCCESS;
 }
@@ -298,54 +298,35 @@ StatusType EmployeeManager::GetNumEmployeesMatching(int CompanyID, int MinEmploy
       if ( company.lock() != nullptr ) return FAILURE;
       company = non_empty_companies->getValue(CompanyID);
       if ( company.lock() == nullptr ) return FAILURE;
-      std::shared_ptr<Employee[]> employee_arr = company.lock()->employees_by_id->flattenvaluesArray(company.lock()->employees_by_id->size, MinEmployeeID, MaxEmployeeId);
+      auto employee_arr = company.lock()->employees_by_id->flattenvaluesArray(company.lock()->employees_by_id->size, MinEmployeeID, MaxEmployeeId);
       int i = 0;
       *TotalNumOfEmployees = 0;
       *NumOfEmployees = 0;
-      while (employee_arr[i].id <= MaxEmployeeId)
+      while (employee_arr[i]->id <= MaxEmployeeId)
       {
-         *TotalNumOfEmployees ++;
-         if ( employee_arr[i].salary>=MinSalary && employee_arr[i].grade>=MinGrade)
+         (*TotalNumOfEmployees)++;
+         if ( employee_arr[i]->salary>=MinSalary && employee_arr[i]->grade>=MinGrade)
          {
-            *NumOfEmployees ++;
+            (*NumOfEmployees)++;
          }
          i++;
       }
       return SUCCESS;
    }
    if (dummy->employees_by_id->isEmpty()) return FAILURE;
-   std::shared_ptr<Employee[]> employee_arr_total = dummy->employees_by_id->flattenvaluesArray(dummy->employees_by_id->size, MinEmployeeID, MaxEmployeeId);
+   auto employee_arr_total = dummy->employees_by_id->flattenvaluesArray(dummy->employees_by_id->size, MinEmployeeID, MaxEmployeeId);
       int j = 0;
       *TotalNumOfEmployees = 0;
       *NumOfEmployees = 0;
-      while (employee_arr_total[j].id <= MaxEmployeeId)
+      while (employee_arr_total[j]->id <= MaxEmployeeId)
       {
-         *TotalNumOfEmployees ++;
-         if ( employee_arr_total[j].salary>=MinSalary && employee_arr_total[j].grade>=MinGrade)
+         (*TotalNumOfEmployees)++;
+         if ( employee_arr_total[j]->salary>=MinSalary && employee_arr_total[j]->grade>=MinGrade)
          {
-            *NumOfEmployees ++;
+            (*NumOfEmployees)++;
          }
          j++;
       }
       return SUCCESS;
 
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

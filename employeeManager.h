@@ -10,7 +10,7 @@ class EmployeeManager
     public:
     std::unique_ptr<AVLTree<int, Company, std::shared_ptr>> empty_companies;
     std::unique_ptr<AVLTree<int, Company, std::shared_ptr>> non_empty_companies;
-    std::unique_ptr<AVLTree<int, Employee, std::shared_ptr>> employees;
+    //std::unique_ptr<AVLTree<int, Employee, std::shared_ptr>> employees;
     std::shared_ptr<Company> dummy;
     EmployeeManager();
     StatusType AddCompany(int CompanyID, int Value);
