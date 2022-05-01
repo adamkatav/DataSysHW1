@@ -11,9 +11,9 @@ class AVLNode
 public:
     Key key;
     Ptr<Value> value;
+    int height;
     std::shared_ptr<AVLNode<Key, Value, Ptr>> left, right;
     std::weak_ptr<AVLNode<Key, Value, Ptr>> parent;
-    int height;
 
     AVLNode<Key, Value, Ptr>(Key key, Ptr<Value> value,
                              std::shared_ptr<AVLNode<Key, Value, Ptr>> left, std::shared_ptr<AVLNode<Key, Value, Ptr>> right) : key(key), value(value), height(1), left(left), right(right) {}
@@ -204,7 +204,7 @@ private:
         if(root.lock() == nullptr){
             return;
         }
-        if (*i == max_num)
+        if (i == max_num)
         {
             return;
         }
