@@ -6,6 +6,8 @@ EmployeeKey::EmployeeKey(int id, int salary):id(id),salary(salary){}
 //Adam
 EmployeeKey::EmployeeKey(){}
 
+EmployeeKey::EmployeeKey():id(-1),salary(-1){}
+
 bool EmployeeKey::operator<(const EmployeeKey& other_key)
 {
     if (salary < other_key.salary) 
@@ -31,6 +33,8 @@ bool EmployeeKey::operator!=(const EmployeeKey& other_key)
 
 Employee::Employee(int id, int salary, int grade, std::weak_ptr<Company> employer): 
                     id(id), salary(salary), grade(grade), employer(employer){}
+
+Employee::Employee():id(-1),salary(-1),grade(-1),employer(std::make_shared<Company>(Company())){}
 
 void Employee::promote(int salary_increase, bool bump_grade)
 {

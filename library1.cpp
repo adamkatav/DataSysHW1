@@ -27,49 +27,41 @@ StatusType RemoveEmployee(void *DS, int EmployeeID){
 StatusType GetCompanyInfo(void *DS, int CompanyID, int *Value, int *NumEmployees){
     if (DS == NULL) return INVALID_INPUT;
     return ((EmployeeManager *) DS)-> GetCompanyInfo(CompanyID, Value, NumEmployees);
-
 }
 
 StatusType GetEmployeeInfo(void *DS, int EmployeeID, int *EmployerID, int *Salary, int *Grade){
     if (DS == NULL) return INVALID_INPUT;
     return ((EmployeeManager *) DS)-> GetEmployeeInfo(EmployeeID, EmployerID, Salary, Grade);
-
 }
 
 StatusType IncreaseCompanyValue(void *DS, int CompanyID, int ValueIncrease){
     if (DS == NULL) return INVALID_INPUT;
     return ((EmployeeManager *) DS)-> IncreaseCompanyValue(CompanyID, ValueIncrease);
-
 }
 
 StatusType PromoteEmployee(void *DS, int EmployeeID, int SalaryIncrease, int BumpGrade){
     if (DS == NULL) return INVALID_INPUT;
     return ((EmployeeManager *) DS)-> PromoteEmployee(EmployeeID, SalaryIncrease, BumpGrade);
-
 }
 
 StatusType HireEmployee(void *DS, int EmployeeID, int NewCompanyID){
     if (DS == NULL) return INVALID_INPUT;
     return ((EmployeeManager *) DS)-> HireEmployee(EmployeeID, NewCompanyID);
-
 }
 
 StatusType AcquireCompany(void *DS, int AcquirerID, int TargetID, double Factor){
     if (DS == NULL) return INVALID_INPUT;
     return ((EmployeeManager *) DS)-> AcquireCompany(AcquirerID, TargetID, Factor);
-
 }
 
 StatusType GetHighestEarner(void *DS, int CompanyID, int *EmployeeID){
     if (DS == NULL) return INVALID_INPUT;
     return ((EmployeeManager *) DS)-> GetHighestEarner(CompanyID, EmployeeID);
-
 }
 
 StatusType GetAllEmployeesBySalary(void *DS, int CompanyID, int **Employees, int *NumOfEmployees){
     if (DS == NULL) return INVALID_INPUT;
     return ((EmployeeManager *) DS)-> GetAllEmployeesBySalary(CompanyID, Employees, NumOfEmployees);
-
 }
 
 StatusType GetHighestEarnerInEachCompany(void *DS, int NumOfCompanies, int **Employees){
