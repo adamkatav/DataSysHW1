@@ -57,7 +57,7 @@ class AVLTree
 {
 private:
     std::shared_ptr<AVLNode<Key, Value, Ptr>> root;
-    std::weak_ptr<AVLNode<Key, Value, Ptr>> rotateLeft(std::shared_ptr<AVLNode<Key, Value, Ptr>> x)
+    std::shared_ptr<AVLNode<Key, Value, Ptr>> rotateLeft(std::shared_ptr<AVLNode<Key, Value, Ptr>> x)
     {
         auto y = x->right;
         auto T2 = y->left;
@@ -66,8 +66,15 @@ private:
             root = y;
             root->parent = y;
         }
-        auto REMOVE_ON_SIGHT = x;
-        y->left = REMOVE_ON_SIGHT;
+        else{
+            if(x->parent.lock()->right->key == x->key){
+                x->parent.lock()->right = y;
+            }
+            else{
+                x->parent.lock()->left = y;
+            }
+        }
+        y->left = x;
         x->parent = y;
         x->right = T2;
         if(T2 != nullptr){
@@ -87,6 +94,14 @@ private:
         if(x->key == root->key){
             root = y;
             root->parent = y;
+        }
+        else{
+            if(x->parent.lock()->right->key == x->key){
+                x->parent.lock()->right = y;
+            }
+            else{
+                x->parent.lock()->left = y;
+            }
         }
         y->right = x;
         x->parent = y;
@@ -110,7 +125,7 @@ private:
             }
             else if (parent.lock()->left->getBalanceFactor() == -1)
             { // LR
-                parent.lock()->left = rotateLeft(parent.lock()->left).lock();
+                parent.lock()->left = rotateLeft(parent.lock()->left);
                 return rotateRight(parent.lock()->left);
             }
         }
@@ -323,28 +338,42 @@ public:
     }
 
     std::weak_ptr<AVLNode<Key, Value, Ptr>> getMin_t(std::shared_ptr<AVLNode<Key, Value, Ptr>> root){
-        while(root->left != nullptr){
-            root = root->left;
+        if(root == nullptr)
+            return std::shared_ptr<AVLNode<Key, Value, Ptr>>();
+        auto temp = root;
+        auto prev = temp;
+        while(temp->left != nullptr){
+            prev = temp;
+            temp = temp->left;
         }
-        return root;
+        return prev;
     }
 
     std::shared_ptr<Value> getMin(){
-
+        if(isEmpty())
+            return std::shared_ptr<Value>();
         return std::shared_ptr<Value>(getMax_t(root).lock()->value);
     }
 
     std::weak_ptr<AVLNode<Key, Value, Ptr>> getMax_t(std::shared_ptr<AVLNode<Key, Value, Ptr>> root){
+        if(root == nullptr)
+            return std::shared_ptr<AVLNode<Key, Value, Ptr>>();
         auto temp = root;
+        auto prev = temp;
         while(temp->right != nullptr){
+            prev = temp;
             temp = temp->right;
         }
-        return temp;
+        return prev;
     }
     
     std::shared_ptr<Value> getMax(){
         //return std::make_shared<Value>(getMax_t(root).lock()->value);
-        return std::shared_ptr<Value>(getMax_t(root).lock()->value);
+        if(isEmpty())
+            return std::shared_ptr<Value>();
+        auto REMOVE_ON_SIGHT = getMax_t(root).lock()->value;
+        
+        return std::shared_ptr<Value>(REMOVE_ON_SIGHT);
     }
 
     std::unique_ptr<Key[]> flattenKeysArray(){
