@@ -42,6 +42,7 @@ public:
         temp->value = value;
         temp->left = left;
         temp->right = right;
+        temp->height = 1;
         if(parent == nullptr)
             temp->parent = std::weak_ptr<AVLNode<Key, Value, Ptr>>(temp);
         else
@@ -56,43 +57,45 @@ class AVLTree
 {
 private:
     std::shared_ptr<AVLNode<Key, Value, Ptr>> root;
-    std::weak_ptr<AVLNode<Key, Value, Ptr>> rotateLeft(std::weak_ptr<AVLNode<Key, Value, Ptr>> x)
+    std::weak_ptr<AVLNode<Key, Value, Ptr>> rotateLeft(std::shared_ptr<AVLNode<Key, Value, Ptr>> x)
     {
-        auto y = x.lock()->right;
+        auto y = x->right;
         auto T2 = y->left;
-        y->parent = x.lock()->parent;
-        if(x.lock()->key == root->key){
+        y->parent = x->parent;
+        if(x->key == root->key){
             root = y;
+            root->parent = y;
         }
-
-        y->left = x.lock();
-        x.lock()->parent = y;
-        x.lock()->right = T2;
-        if(T2 != nullptr){
-            T2->parent = x.lock();
-        }
-
-        x.lock()->height = AVLNode<Key, Value, Ptr>::getHeight(x.lock()->left) > AVLNode<Key, Value, Ptr>::getHeight(x.lock()->right) + 1 ? AVLNode<Key, Value, Ptr>::getHeight(x.lock()->left) : AVLNode<Key, Value, Ptr>::getHeight(x.lock()->right) + 1;
-        y->height = AVLNode<Key, Value, Ptr>::getHeight(y->left) > AVLNode<Key, Value, Ptr>::getHeight(y->right) + 1 ? AVLNode<Key, Value, Ptr>::getHeight(y->left) : AVLNode<Key, Value, Ptr>::getHeight(y->right) + 1;
-
-        return y;
-    }
-    std::weak_ptr<AVLNode<Key, Value, Ptr>> rotateRight(std::weak_ptr<AVLNode<Key, Value, Ptr>> x)
-    {
-        auto y = x.lock()->left;
-        auto T2 = y->right;
-        y->parent = x.lock()->parent;
-        if(x.lock()->key == root->key){
-            root = y;
-        }
-        y->right = x.lock();
-        x.lock()->parent = y;
-        x.lock()->left = T2;
+        auto REMOVE_ON_SIGHT = x;
+        y->left = REMOVE_ON_SIGHT;
+        x->parent = y;
+        x->right = T2;
         if(T2 != nullptr){
             T2->parent = x;
         }
 
-        x.lock()->height = AVLNode<Key, Value, Ptr>::getHeight(x.lock()->left) > AVLNode<Key, Value, Ptr>::getHeight(x.lock()->right) + 1 ? AVLNode<Key, Value, Ptr>::getHeight(x.lock()->left) : AVLNode<Key, Value, Ptr>::getHeight(x.lock()->right) + 1;
+        x->height = AVLNode<Key, Value, Ptr>::getHeight(x->left) > AVLNode<Key, Value, Ptr>::getHeight(x->right) + 1 ? AVLNode<Key, Value, Ptr>::getHeight(x->left) : AVLNode<Key, Value, Ptr>::getHeight(x->right) + 1;
+        y->height = AVLNode<Key, Value, Ptr>::getHeight(y->left) > AVLNode<Key, Value, Ptr>::getHeight(y->right) + 1 ? AVLNode<Key, Value, Ptr>::getHeight(y->left) : AVLNode<Key, Value, Ptr>::getHeight(y->right) + 1;
+
+        return y;
+    }
+    std::shared_ptr<AVLNode<Key, Value, Ptr>> rotateRight(std::shared_ptr<AVLNode<Key, Value, Ptr>> x)
+    {
+        auto y = x->left;
+        auto T2 = y->right;
+        y->parent = x->parent;
+        if(x->key == root->key){
+            root = y;
+            root->parent = y;
+        }
+        y->right = x;
+        x->parent = y;
+        x->left = T2;
+        if(T2 != nullptr){
+            T2->parent = x;
+        }
+
+        x->height = AVLNode<Key, Value, Ptr>::getHeight(x->left) > AVLNode<Key, Value, Ptr>::getHeight(x->right) + 1 ? AVLNode<Key, Value, Ptr>::getHeight(x->left) : AVLNode<Key, Value, Ptr>::getHeight(x->right) + 1;
         y->height = AVLNode<Key, Value, Ptr>::getHeight(y->left) > AVLNode<Key, Value, Ptr>::getHeight(y->right) + 1 ? AVLNode<Key, Value, Ptr>::getHeight(y->left) :AVLNode<Key, Value, Ptr>:: getHeight(y->right) + 1;
 
         return y;
@@ -103,7 +106,7 @@ private:
         {
             if (parent.lock()->left->getBalanceFactor() >= 0)
             { // LL
-                return rotateRight(parent);
+                return rotateRight(parent.lock());
             }
             else if (parent.lock()->left->getBalanceFactor() == -1)
             { // LR
@@ -115,12 +118,13 @@ private:
         {
             if (parent.lock()->right->getBalanceFactor() <= 0)
             { // RR
-                return rotateLeft(parent);
+                return rotateLeft(parent.lock());
             }
             else if (parent.lock()->right->getBalanceFactor() == 1)
             { // RL
-                parent.lock()->right = rotateRight(parent.lock()->right).lock();
-                return rotateLeft(parent);
+                auto REMOVE_ON_SIGHT = rotateRight(parent.lock()->right);
+                parent.lock()->right = REMOVE_ON_SIGHT;
+                return rotateLeft(parent.lock());
             }
         }
         if (parent.lock()->parent.lock()->key != parent.lock()->key)
@@ -140,6 +144,7 @@ private:
             if (root.lock()->left == nullptr)
             {
                 root.lock()->left = AVLNode<Key, Value, Ptr>::createAVLNode(key, value, std::shared_ptr<AVLNode<Key, Value, Ptr>>(nullptr), std::shared_ptr<AVLNode<Key, Value, Ptr>>(nullptr), root.lock()); // Should pass weak_ptr
+                root.lock()->height = max(AVLNode<Key, Value, Ptr>::getHeight(root.lock()->left), AVLNode<Key, Value, Ptr>::getHeight(root.lock()->right)) + 1;
                 return AVLNode<Key, Value, Ptr>::getHeight(root);
             }
             add_t(key, value, root.lock()->left);
@@ -151,6 +156,7 @@ private:
             if (root.lock()->right == nullptr)
             {
                 root.lock()->right = AVLNode<Key, Value, Ptr>::createAVLNode(key, value, nullptr, nullptr, root.lock());
+                root.lock()->height = max(AVLNode<Key, Value, Ptr>::getHeight(root.lock()->left), AVLNode<Key, Value, Ptr>::getHeight(root.lock()->right)) + 1;
                 return AVLNode<Key, Value, Ptr>::getHeight(root);
             }
             add_t(key, value, root.lock()->right);
@@ -246,15 +252,17 @@ public:
     AVLTree<Key, Value, Ptr>() : root(nullptr), size(0) {}
     void add(Key key, Ptr<Value> value)
     {
+        if (getValue(key).lock() != nullptr){
+            throw std::runtime_error("Key already exist");
+        }
         if (isEmpty()){
             root = AVLNode<Key, Value, Ptr>::createAVLNode(key, value, nullptr, nullptr, root);
             root->parent = root;
         }
-        if (getValue(key).lock() != nullptr){
-            throw std::runtime_error("Key already exist");
+        else{
+            add_t(key, value, root);
         }
         size++;
-        add_t(key, value, root);
     }
     int remove(Key key){
         auto root = getNode(key).lock();

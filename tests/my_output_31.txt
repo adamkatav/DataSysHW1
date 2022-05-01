@@ -1,0 +1,2 @@
+Init done
+AddCompany: INVALID_INPUT
