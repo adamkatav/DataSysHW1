@@ -39,12 +39,12 @@ class Company
     public:
     int id;
     std::weak_ptr<Employee> highest_earner;
-    std::shared_ptr<AVLTree<EmployeeKey, Employee, std::weak_ptr>> employees_by_salary;
-    std::shared_ptr<AVLTree<int, Employee, std::weak_ptr>> employees_by_id;
+    std::shared_ptr<AVLTree<EmployeeKey, Employee, std::shared_ptr>> employees_by_salary;
+    std::shared_ptr<AVLTree<int, Employee, std::shared_ptr>> employees_by_id;
 
     Company(int value, int id, std::weak_ptr<Employee> highest_earner,
-            std::shared_ptr<AVLTree<EmployeeKey, Employee, std::weak_ptr>> employees,
-            std::shared_ptr<AVLTree<int, Employee, std::weak_ptr>> employees_by_id);
+            std::shared_ptr<AVLTree<EmployeeKey, Employee, std::shared_ptr>> employees,
+            std::shared_ptr<AVLTree<int, Employee, std::shared_ptr>> employees_by_id);
     Company(const Company& comp) = default;
 
     int getValue();
