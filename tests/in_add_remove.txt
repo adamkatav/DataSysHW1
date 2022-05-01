@@ -1,0 +1,22 @@
+Init
+AddCompany 50 96
+AddCompany 399 17
+AddCompany 375 70
+AddCompany 100 48
+AddCompany 407 43
+AddCompany 493 35
+AddCompany 169 10
+AddCompany 135 87
+AddCompany 39 10
+AddCompany 394 93
+AddCompany 406 13
+AddCompany 175 64
+AddCompany 492 12
+AddCompany 146 82
+AddCompany 365 65
+AddCompany 199 95
+RemoveCompany 394
+RemoveCompany 39
+RemoveCompany 146
+RemoveCompany 169
+RemoveCompany 492

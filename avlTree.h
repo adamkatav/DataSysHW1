@@ -4,6 +4,7 @@
 #include <memory>
 #include <functional>
 #include <stdexcept>
+#include <iostream>
 
 template <class Key, class Value, template <class> class Ptr>
 class AVLNode
@@ -281,45 +282,46 @@ public:
         size++;
     }
     int remove(Key key){
-        auto root = getNode(key).lock();
-        if(root == nullptr){
+        auto old_root = getNode(key).lock();
+        if(old_root == nullptr){
             throw std::runtime_error("key doesn't exist in remove");
         }
-        auto new_root = getMin_t(root->right);
-        auto new_root_old_parent = root->parent;
+        auto new_root = getMin_t(old_root->right);
+        auto new_root_old_parent = old_root->parent;
         if(new_root.lock() == nullptr){
-            if(root->parent.lock()->key < root->key){
-                root->parent.lock()->right = root->left;
+            if(old_root->parent.lock()->key < old_root->key){
+                old_root->parent.lock()->right = old_root->left;
             }
             else{
-                root->parent.lock()->left = root->left;
+                old_root->parent.lock()->left = old_root->left;
             }
         }
         else{
             
             new_root_old_parent = new_root.lock()->parent;
             //update root's parent
-            if(root->parent.lock()->key < root->key){
-                root->parent.lock()->left = new_root.lock();
+            if(old_root->parent.lock()->key < old_root->key){
+                old_root->parent.lock()->right = new_root.lock();
             }
             else{
-                root->parent.lock()->right = new_root.lock();
+                old_root->parent.lock()->left = new_root.lock();////////////doesn't actually put the new_root 
             }
 
             //update new_root left and right
-            new_root.lock()->left = root->left;
-            root->left->parent = new_root;
+            new_root.lock()->left = old_root->left;
+            old_root->left->parent = new_root;
 
 
             //removing new_root from its parent
             new_root.lock()->parent.lock()->left = new_root.lock()->right;
 
             //Update new_root right
-            if(root->right->key != new_root.lock()->key){
-                new_root.lock()->right = root->right;
+            if(old_root->right->key != new_root.lock()->key){
+                new_root.lock()->right = old_root->right;
             }
         }
-        if(root->key == root->parent.lock()->key){
+        if(old_root->key == old_root->parent.lock()->key){
+            this->root = new_root.lock();
             new_root.lock()->parent = new_root;
         }
         while (new_root_old_parent.lock()->key != new_root_old_parent.lock()->parent.lock()->key){
@@ -440,6 +442,7 @@ void clear(){
     root = nullptr;
     size = 0;
 }
+
 
 };
 #endif
