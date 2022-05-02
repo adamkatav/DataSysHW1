@@ -2,6 +2,7 @@
 #define COMPANY_EMPLOYEE_H_
 #include <memory>
 #include "avlTree.h"
+#include <iostream>
 
 class EmployeeKey
 {
@@ -14,7 +15,9 @@ class EmployeeKey
     bool operator<(const EmployeeKey& other_key);
     bool operator==(const EmployeeKey& other_key);
     bool operator!=(const EmployeeKey& other_key);
+    friend std::ostream& operator<<(std::ostream& os, const EmployeeKey& key);
 };
+
 
 class Company;
 

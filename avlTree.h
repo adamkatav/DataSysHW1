@@ -299,6 +299,12 @@ public:
         else{
             
             new_root_old_parent = new_root.lock()->parent;
+            if(old_root->right->key == new_root.lock()->key)
+            {
+                //if the new root is the old root's right son
+                //we will not use new_root_old_parent in this case, only in the end when updating heights
+                new_root_old_parent = new_root.lock();
+            }
             
             //update root's parent
             new_root.lock()->parent = old_root->parent;
@@ -315,18 +321,23 @@ public:
             }
 
             //removing new_root from its parent
-            new_root_old_parent.lock()->left = new_root.lock()->right;
-
+            if(old_root->right->key != new_root.lock()->key)
+            {
+                new_root_old_parent.lock()->left = new_root.lock()->right;
+            }
+            
             //update new_root left and right
             new_root.lock()->left = old_root->left;
-            old_root->left->parent = new_root;
+            if(old_root->left != nullptr)
+                old_root->left->parent = new_root;
 
             //Update new_root right
             if(old_root->right->key != new_root.lock()->key){
                 new_root.lock()->right = old_root->right;
-                old_root->right->parent = new_root;///////////////
+                if(old_root->right == nullptr)
+                    throw std::runtime_error("right is null in remove");
+                old_root->right->parent = new_root;
             }
-
         }
 
         //update the heights in the מסלול הכנסה
@@ -344,6 +355,7 @@ public:
             new_root_old_parent = new_root_old_parent_parent;
         }
         size--;
+        print();
         return 0;
     }
     void addAVLTree(std::weak_ptr<AVLTree<Key, Value, Ptr>> other_tree){
@@ -455,6 +467,20 @@ public:
 void clear(){
     root = nullptr;
     size = 0;
+}
+
+void print_t(std::weak_ptr<AVLNode<Key,Value,Ptr>> node,int& counter){
+    if(node.lock()==nullptr) return;
+    print_t(node.lock()->left, counter);
+    std::cout << node.lock()->key << std::endl; 
+    counter++;
+    print_t(node.lock()->right, counter);
+}
+
+void print(){
+    int counter = 0;
+    print_t(root,counter);
+    std::cout << "size = " << counter << std::endl;
 }
 
 

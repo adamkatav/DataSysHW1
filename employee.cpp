@@ -6,6 +6,11 @@ EmployeeKey::EmployeeKey(int id, int salary):id(id),salary(salary){}
 //Adam
 EmployeeKey::EmployeeKey(){}
 
+std::ostream& operator<<(std::ostream& os, const EmployeeKey& key)
+{
+    os << key.id;
+    return os;
+}
 
 bool EmployeeKey::operator<(const EmployeeKey& other_key)
 {
