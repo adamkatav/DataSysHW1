@@ -69,11 +69,11 @@ private:
         }
         else{
             auto REMOVE_ON_SIGHT = x->parent.lock();
-            if(REMOVE_ON_SIGHT->right != nullptr && x->parent.lock()->right->key == x->key){
-                x->parent.lock()->right = y;
+            if(REMOVE_ON_SIGHT->right != nullptr && REMOVE_ON_SIGHT->right->key == x->key){
+                REMOVE_ON_SIGHT->right = y;
             }
             else{
-                x->parent.lock()->left = y;
+                REMOVE_ON_SIGHT->left = y;
             }
         }
         y->left = x;
@@ -97,12 +97,14 @@ private:
             root = y;
             root->parent = y;
         }
+
         else{
-            if(x->parent.lock()->right != nullptr && x->parent.lock()->right->key == x->key){
-                x->parent.lock()->right = y;
+        auto REMOVE_ON_SIGHT = x->parent.lock();
+            if(REMOVE_ON_SIGHT->right != nullptr && REMOVE_ON_SIGHT->right->key == x->key){
+                REMOVE_ON_SIGHT->right = y;
             }
             else{
-                x->parent.lock()->left = y;
+                REMOVE_ON_SIGHT->left = y;
             }
         }
         y->right = x;
