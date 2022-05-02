@@ -68,7 +68,8 @@ private:
             root->parent = y;
         }
         else{
-            if(x->parent.lock()->right != nullptr && x->parent.lock()->right->key == x->key){
+            auto REMOVE_ON_SIGHT = x->parent.lock();
+            if(REMOVE_ON_SIGHT->right != nullptr && x->parent.lock()->right->key == x->key){
                 x->parent.lock()->right = y;
             }
             else{
@@ -268,8 +269,7 @@ public:
     AVLTree<Key, Value, Ptr>() : root(nullptr), size(0) {}
     void add(Key key, std::shared_ptr<Value> value)
     {
-        auto REMOVE_ON_SIGHT = getValue(key).lock();
-        if (REMOVE_ON_SIGHT != nullptr){
+        if (getValue(key).lock() != nullptr){
             throw std::runtime_error("Key already exist");
         }
         if (isEmpty()){
@@ -285,6 +285,10 @@ public:
         auto old_root = getNode(key).lock();
         if(old_root == nullptr){
             throw std::runtime_error("key doesn't exist in remove");
+        }
+        if(size == 1){
+            clear();
+            return 0;
         }
         auto new_root = getMin_t(old_root->right);
         auto new_root_old_parent = old_root->parent;
@@ -320,8 +324,8 @@ public:
             }
             
             if(old_root->key == old_root->parent.lock()->key){ //old_root is absolute root
-            this->root = new_root.lock();
-            new_root.lock()->parent = new_root;
+                root = new_root.lock();
+                new_root.lock()->parent = new_root;
             }
 
             //removing new_root from its parent
@@ -333,7 +337,6 @@ public:
             //update new_root left and right
             new_root.lock()->left = old_root->left;
 
-            //WHY?
             if(old_root->left != nullptr)
                 old_root->left->parent = new_root;
 
@@ -363,7 +366,7 @@ public:
         }
         rotate(new_root_old_parent);
         size--;
-        print();
+        //print();
         return 0;
     }
     void addAVLTree(std::weak_ptr<AVLTree<Key, Value, Ptr>> other_tree){
