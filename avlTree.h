@@ -288,34 +288,38 @@ public:
         }
         auto new_root = getMin_t(old_root->right);
         auto new_root_old_parent = old_root->parent;
-        if(new_root.lock() == nullptr){
-            if(old_root->parent.lock()->key < old_root->key){
+        if(new_root.lock() == nullptr){ //old_root is leaf
+            if(old_root->parent.lock()->key < old_root->key){ //old_root is on the right
                 old_root->parent.lock()->right = old_root->left;
             }
-            else{
+            else{ //old_root is on the left
                 old_root->parent.lock()->left = old_root->left;
             }
         }
-        else{
+        else{ //old_root isn't leaf
             
             new_root_old_parent = new_root.lock()->parent;
+            
             if(old_root->right->key == new_root.lock()->key)
             {
                 //if the new root is the old root's right son
                 //we will not use new_root_old_parent in this case, only in the end when updating heights
                 new_root_old_parent = new_root.lock();
             }
-            
+                      
             //update root's parent
             new_root.lock()->parent = old_root->parent;
-            if(old_root->parent.lock()->key < old_root->key){
+            if(old_root->parent.lock()->key < old_root->key){ //old_root is on the right
                 old_root->parent.lock()->right = new_root.lock();
             }
-            else{
+            else if(old_root->parent.lock()->key == old_root->key){ // old_root is absolute root
+                //Do nothing
+            }
+            else{ //old_root is on the left
                 old_root->parent.lock()->left = new_root.lock();
             }
             
-            if(old_root->key == old_root->parent.lock()->key){
+            if(old_root->key == old_root->parent.lock()->key){ //old_root is absolute root
             this->root = new_root.lock();
             new_root.lock()->parent = new_root;
             }
@@ -328,6 +332,8 @@ public:
             
             //update new_root left and right
             new_root.lock()->left = old_root->left;
+
+            //WHY?
             if(old_root->left != nullptr)
                 old_root->left->parent = new_root;
 
@@ -346,6 +352,7 @@ public:
             temp->height = max(AVLNode<Key, Value, Ptr>::getHeight(temp->left), AVLNode<Key, Value, Ptr>::getHeight(temp->right)) + 1;
             temp = temp->parent.lock();
         }
+
         //update root's height
         temp->height = max(AVLNode<Key, Value, Ptr>::getHeight(temp->left), AVLNode<Key, Value, Ptr>::getHeight(temp->right)) + 1;
         //rotate 
@@ -354,6 +361,7 @@ public:
             rotate(new_root_old_parent);
             new_root_old_parent = new_root_old_parent_parent;
         }
+        rotate(new_root_old_parent);
         size--;
         print();
         return 0;
@@ -472,7 +480,7 @@ void clear(){
 void print_t(std::weak_ptr<AVLNode<Key,Value,Ptr>> node,int& counter){
     if(node.lock()==nullptr) return;
     print_t(node.lock()->left, counter);
-    std::cout << node.lock()->key << std::endl; 
+    std::cout << node.lock()->key << " " << node.lock()->height << std::endl; 
     counter++;
     print_t(node.lock()->right, counter);
 }
