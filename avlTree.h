@@ -82,8 +82,8 @@ private:
             T2->parent = x;
         }
 
-        x->height = AVLNode<Key, Value, Ptr>::getHeight(x->left) > AVLNode<Key, Value, Ptr>::getHeight(x->right) + 1 ? AVLNode<Key, Value, Ptr>::getHeight(x->left) : AVLNode<Key, Value, Ptr>::getHeight(x->right) + 1;
-        y->height = AVLNode<Key, Value, Ptr>::getHeight(y->left) > AVLNode<Key, Value, Ptr>::getHeight(y->right) + 1 ? AVLNode<Key, Value, Ptr>::getHeight(y->left) : AVLNode<Key, Value, Ptr>::getHeight(y->right) + 1;
+        x->height = AVLNode<Key, Value, Ptr>::getHeight(x->left) > AVLNode<Key, Value, Ptr>::getHeight(x->right)  ? AVLNode<Key, Value, Ptr>::getHeight(x->left) + 1 : AVLNode<Key, Value, Ptr>::getHeight(x->right) + 1;
+        y->height = AVLNode<Key, Value, Ptr>::getHeight(y->left) > AVLNode<Key, Value, Ptr>::getHeight(y->right)  ? AVLNode<Key, Value, Ptr>::getHeight(y->left) + 1 : AVLNode<Key, Value, Ptr>::getHeight(y->right) + 1;
 
         return y;
     }
@@ -111,8 +111,8 @@ private:
             T2->parent = x;
         }
 
-        x->height = AVLNode<Key, Value, Ptr>::getHeight(x->left) > AVLNode<Key, Value, Ptr>::getHeight(x->right) + 1 ? AVLNode<Key, Value, Ptr>::getHeight(x->left) : AVLNode<Key, Value, Ptr>::getHeight(x->right) + 1;
-        y->height = AVLNode<Key, Value, Ptr>::getHeight(y->left) > AVLNode<Key, Value, Ptr>::getHeight(y->right) + 1 ? AVLNode<Key, Value, Ptr>::getHeight(y->left) :AVLNode<Key, Value, Ptr>:: getHeight(y->right) + 1;
+        x->height = AVLNode<Key, Value, Ptr>::getHeight(x->left) > AVLNode<Key, Value, Ptr>::getHeight(x->right) ? AVLNode<Key, Value, Ptr>::getHeight(x->left) + 1 : AVLNode<Key, Value, Ptr>::getHeight(x->right) + 1;
+        y->height = AVLNode<Key, Value, Ptr>::getHeight(y->left) > AVLNode<Key, Value, Ptr>::getHeight(y->right) ? AVLNode<Key, Value, Ptr>::getHeight(y->left) + 1 :AVLNode<Key, Value, Ptr>:: getHeight(y->right) + 1;
 
         return y;
     }
@@ -299,31 +299,44 @@ public:
         else{
             
             new_root_old_parent = new_root.lock()->parent;
+            
             //update root's parent
+            new_root.lock()->parent = old_root->parent;
             if(old_root->parent.lock()->key < old_root->key){
                 old_root->parent.lock()->right = new_root.lock();
             }
             else{
-                old_root->parent.lock()->left = new_root.lock();////////////doesn't actually put the new_root 
+                old_root->parent.lock()->left = new_root.lock();
+            }
+            
+            if(old_root->key == old_root->parent.lock()->key){
+            this->root = new_root.lock();
+            new_root.lock()->parent = new_root;
             }
 
             //update new_root left and right
             new_root.lock()->left = old_root->left;
             old_root->left->parent = new_root;
 
-
-            //removing new_root from its parent
-            new_root.lock()->parent.lock()->left = new_root.lock()->right;
-
             //Update new_root right
             if(old_root->right->key != new_root.lock()->key){
                 new_root.lock()->right = old_root->right;
+                old_root->right->parent = new_root;///////////////
             }
+
+            //removing new_root from its parent
+            new_root_old_parent.lock()->left = new_root.lock()->right;
         }
-        if(old_root->key == old_root->parent.lock()->key){
-            this->root = new_root.lock();
-            new_root.lock()->parent = new_root;
+
+        //update the heights in the מסלול הכנסה
+        auto temp = new_root_old_parent.lock();
+        while (temp->key != temp->parent.lock()->key){
+            temp->height = max(AVLNode<Key, Value, Ptr>::getHeight(temp->left), AVLNode<Key, Value, Ptr>::getHeight(temp->right)) + 1;
+            temp = temp->parent.lock();
         }
+        //update root's height
+        temp->height = max(AVLNode<Key, Value, Ptr>::getHeight(temp->left), AVLNode<Key, Value, Ptr>::getHeight(temp->right)) + 1;
+        //rotate 
         while (new_root_old_parent.lock()->key != new_root_old_parent.lock()->parent.lock()->key){
             auto new_root_old_parent_parent = new_root_old_parent.lock()->parent;
             rotate(new_root_old_parent);
@@ -344,12 +357,12 @@ public:
         if(root == nullptr)
             return std::shared_ptr<AVLNode<Key, Value, Ptr>>();
         auto temp = root;
-        auto prev = temp;
+        //auto prev = temp;
         while(temp->left != nullptr){
-            prev = temp;
+        //    prev = temp;
             temp = temp->left;
         }
-        return prev;
+        return temp;
     }
 
     std::shared_ptr<Value> getMin(){
@@ -362,12 +375,12 @@ public:
         if(root == nullptr)
             return std::shared_ptr<AVLNode<Key, Value, Ptr>>();
         auto temp = root;
-        auto prev = temp;
+        //auto prev = temp;
         while(temp->right != nullptr){
-            prev = temp;
+        //    prev = temp;
             temp = temp->right;
         }
-        return prev;
+        return temp;
     }
     
     std::shared_ptr<Value> getMax(){
