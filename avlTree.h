@@ -314,6 +314,9 @@ public:
             new_root.lock()->parent = new_root;
             }
 
+            //removing new_root from its parent
+            new_root_old_parent.lock()->left = new_root.lock()->right;
+
             //update new_root left and right
             new_root.lock()->left = old_root->left;
             old_root->left->parent = new_root;
@@ -324,8 +327,6 @@ public:
                 old_root->right->parent = new_root;///////////////
             }
 
-            //removing new_root from its parent
-            new_root_old_parent.lock()->left = new_root.lock()->right;
         }
 
         //update the heights in the מסלול הכנסה
