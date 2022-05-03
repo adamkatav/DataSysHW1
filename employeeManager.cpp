@@ -66,7 +66,6 @@ StatusType EmployeeManager::AddEmployee(int EmployeeID, int CompanyID, int Salar
       non_empty_companies->add(CompanyID,company.lock());//catch exception
       empty_companies->remove(CompanyID);//catch exception
    }
-
    company.lock()->employees_by_salary->add(current_key,employee);//catch exception
    company.lock()->employees_by_id->add(EmployeeID,employee);//catch exception
    if(company.lock()->employees_by_salary->isEmpty())
@@ -97,24 +96,22 @@ StatusType EmployeeManager::RemoveEmployee(int EmployeeID)
    if( employee == nullptr )
       return FAILURE;
    EmployeeKey key = EmployeeKey(employee->id, employee->salary);
-   employee->employer.lock()->employees_by_salary->remove(key); //catch exception
-   employee->employer.lock()->employees_by_id->remove(EmployeeID); //catch exception
-   //find the new max
-   if(!employee->employer.lock()->employees_by_salary->isEmpty())
-      employee->employer.lock()->highest_earner = employee->employer.lock()->employees_by_salary->getMax();
+   auto Employer = employee->employer.lock();
+   Employer->employees_by_salary->remove(key); //catch exception
+   Employer->employees_by_id->remove(EmployeeID); //catch exception
+   if(!Employer->employees_by_salary->isEmpty())
+      Employer->highest_earner = Employer->employees_by_salary->getMax();
    else{
-      empty_companies->add(employee->employer.lock()->id, employee->employer.lock());
-      non_empty_companies->remove(employee->employer.lock()->id);
-      employee->employer.lock()->highest_earner = std::shared_ptr<Employee>();
+      empty_companies->add(Employer->id, Employer);
+      non_empty_companies->remove(Employer->id);
+      Employer->highest_earner = std::shared_ptr<Employee>();
    }
    dummy->employees_by_salary->remove(key); //catch exception
    dummy->employees_by_id->remove(EmployeeID); //catch exception
-   //find the new max
    if(!dummy->employees_by_salary->isEmpty())
       dummy->highest_earner = dummy->employees_by_salary->getMax();
    else
       dummy->highest_earner = std::shared_ptr<Employee>();
-   //employees->remove(EmployeeID); //catch exception
    return SUCCESS;
 }
 
@@ -169,14 +166,14 @@ StatusType EmployeeManager::PromoteEmployee(int EmployeeID, int SalaryIncrease, 
 {
    if (EmployeeID <= 0 || SalaryIncrease <= 0 )
       return INVALID_INPUT;
-   std::weak_ptr<Employee> employee = dummy->employees_by_id->getValue(EmployeeID);
-   if( employee.lock() == nullptr )
+   std::shared_ptr<Employee> employee = dummy->employees_by_id->getValue(EmployeeID).lock();
+   if( employee == nullptr )
       return FAILURE;
-   int new_salary = employee.lock()->salary + SalaryIncrease;
-   int new_grade = employee.lock()->grade;
+   int new_salary = employee->salary + SalaryIncrease;
+   int new_grade = employee->grade;
    if(BumpGrade>0)
       new_grade++;
-   int company_id = employee.lock()->employer.lock()->id;
+   int company_id = employee->employer.lock()->id;
    StatusType res1 = RemoveEmployee(EmployeeID);
    if (res1 == ALLOCATION_ERROR)
       return ALLOCATION_ERROR;
@@ -193,47 +190,48 @@ StatusType EmployeeManager::HireEmployee(int EmployeeID, int NewCompanyID)
    std::shared_ptr<Employee> employee = dummy->employees_by_id->getValue(EmployeeID).lock();
    if( employee == nullptr )
       return FAILURE;
+   int salary = employee->salary;
+   int grade = employee->grade;
+   // std::shared_ptr<Company> new_company = empty_companies->getValue(NewCompanyID).lock();
+   // if( new_company == nullptr )
+   // {
+   //    new_company = non_empty_companies->getValue(NewCompanyID).lock();
+   //    if ( new_company == nullptr )
+   //       return FAILURE;
+   // }
    
-   std::shared_ptr<Company> new_company = empty_companies->getValue(NewCompanyID).lock();
-   if( new_company == nullptr )
-   {
-      new_company = non_empty_companies->getValue(NewCompanyID).lock();
-      if ( new_company == nullptr )
-         return FAILURE;
-   }
+   // EmployeeKey key = EmployeeKey(EmployeeID,employee->salary);
+   // //check if the employee already works at the new company:
+   // if(new_company->employees_by_salary->getValue(key).lock() != nullptr)
+   //    return FAILURE;
+   // //remove employee from old company:
+   // employee->employer.lock()->employees_by_salary->remove(key); //catch exception
+   // employee->employer.lock()->employees_by_id->remove(EmployeeID); //catch exception
+   // employee->employer.lock()->highest_earner = employee->employer.lock()->employees_by_salary->getMax();
+   // if(employee->employer.lock()->employees_by_id->isEmpty()){
+   //    empty_companies->add(employee->employer.lock()->id, employee->employer.lock());
+   //    non_empty_companies->remove(employee->employer.lock()->id);
+   // }
+   // if(new_company == nullptr)
+   //    throw std::runtime_error("employer was freed in HireEmployee");
+   // employee->employer = new_company;
+   // if(new_company->employees_by_id->isEmpty()){
+   //    non_empty_companies->add(new_company->id, new_company);
+   //    empty_companies->remove(new_company->id);
+   // }
+   // new_company->employees_by_salary->add(key,employee); //catch exception
+   // new_company->employees_by_id->add(EmployeeID,employee); //catch exception
+   // if(new_company->employees_by_salary->isEmpty())
+   //    throw std::runtime_error("new_company->employees_by_salary is empty in HireEmployee");
    
-   EmployeeKey key = EmployeeKey(EmployeeID,employee->salary);
-   //check if the employee already works at the new company:
-   if(new_company->employees_by_salary->getValue(key).lock() != nullptr)
-      return FAILURE;
-   //remove employee from old company:
-   employee->employer.lock()->employees_by_salary->remove(key); //catch exception
-   employee->employer.lock()->employees_by_id->remove(EmployeeID); //catch exception
-   employee->employer.lock()->highest_earner = employee->employer.lock()->employees_by_salary->getMax();
-   if(employee->employer.lock()->employees_by_id->isEmpty()){
-      empty_companies->add(employee->employer.lock()->id, employee->employer.lock());
-      non_empty_companies->remove(employee->employer.lock()->id);
-   }
-   if(new_company == nullptr)
-      throw std::runtime_error("employer was freed in HireEmployee");
-   employee->employer = new_company;
-   if(new_company->employees_by_id->isEmpty()){
-      non_empty_companies->add(new_company->id, new_company);
-      empty_companies->remove(new_company->id);
-   }
-   new_company->employees_by_salary->add(key,employee); //catch exception
-   new_company->employees_by_id->add(EmployeeID,employee); //catch exception
-   if(new_company->employees_by_salary->isEmpty())
-      throw std::runtime_error("new_company->employees_by_salary is empty in HireEmployee");
+   // new_company->highest_earner =  new_company->employees_by_salary->getMax();
    
-   new_company->highest_earner =  new_company->employees_by_salary->getMax();
-   
-   /*StatusType result1 = RemoveEmployee(EmployeeID);
+   StatusType result1 = RemoveEmployee(EmployeeID);
    if(result1 == FAILURE)
       return FAILURE;
-   StatusType result2 = AddEmployee(EmployeeID, NewCompanyID, employee->salary, employee->grade);
-   */
-   return SUCCESS;
+   StatusType result2 = AddEmployee(EmployeeID, NewCompanyID, salary, grade);
+   
+   return result2;
 }
 
 StatusType EmployeeManager::AcquireCompany(int AcquirerID, int TargetID, double Factor)
@@ -411,3 +409,4 @@ StatusType EmployeeManager::GetNumEmployeesMatching(int CompanyID, int MinEmploy
       }
       return SUCCESS;
 }
+

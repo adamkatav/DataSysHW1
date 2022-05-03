@@ -15,8 +15,28 @@ AddCompany 492 12
 AddCompany 146 82
 AddCompany 365 65
 AddCompany 199 95
-RemoveCompany 394
-RemoveCompany 39
-RemoveCompany 146
-RemoveCompany 169
-RemoveCompany 492
+AddEmployee 1467 394 65 5
+AddEmployee 339 39 78 6
+AddEmployee 6398 146 97 4
+AddEmployee 5415 169 32 0
+AddEmployee 2322 492 51 4
+AddEmployee 2341 50 13 1
+AddEmployee 6041 492 23 3
+AddEmployee 6833 407 49 0
+AddEmployee 4039 169 8 6
+AddEmployee 7562 375 25 1
+AddEmployee 7297 135 68 5
+AddEmployee 7843 407 41 5
+AddEmployee 6663 169 11 9
+AddEmployee 5764 493 92 3
+AddEmployee 1070 365 3 8
+AddEmployee 6060 39 94 0
+AddEmployee 878 492 34 7
+RemoveEmployee 1070
+RemoveEmployee 6833
+RemoveEmployee 5415
+RemoveEmployee 7297
+RemoveEmployee 2322
+RemoveEmployee 339
+RemoveEmployee 6060
+RemoveEmployee 878

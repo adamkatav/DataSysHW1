@@ -69,6 +69,8 @@ private:
         }
         else{
             auto REMOVE_ON_SIGHT = x->parent.lock();
+            if(REMOVE_ON_SIGHT==nullptr)
+                throw std::runtime_error("parent is null in rotate");
             if(REMOVE_ON_SIGHT->right != nullptr && REMOVE_ON_SIGHT->right->key == x->key){
                 REMOVE_ON_SIGHT->right = y;
             }
@@ -130,7 +132,8 @@ private:
             else if (parent.lock()->left->getBalanceFactor() == -1)
             { // LR
                 parent.lock()->left = rotateLeft(parent.lock()->left);
-                return rotateRight(parent.lock()->left);
+                parent.lock()->left->parent = parent;///////////////////////////////
+                return rotateRight(parent.lock());//b4 it pointed to left of parent
             }
         }
         else if (parent.lock()->getBalanceFactor() == -2)
@@ -143,6 +146,7 @@ private:
             { // RL
                 auto REMOVE_ON_SIGHT = rotateRight(parent.lock()->right);
                 parent.lock()->right = REMOVE_ON_SIGHT;
+                parent.lock()->right->parent = parent;///////////////////////
                 return rotateLeft(parent.lock());
             }
         }
@@ -288,30 +292,67 @@ public:
         if(old_root == nullptr){
             throw std::runtime_error("key doesn't exist in remove");
         }
-        if(size == 1){
-            clear();
-            return 0;
-        }
+        // if(size == 1){
+        //     clear();
+        //     return 0;
+        // }
         auto new_root = getMin_t(old_root->right);
         auto new_root_old_parent = old_root->parent;
-        if(new_root.lock() == nullptr){ //old_root is leaf
-            if(old_root->parent.lock()->key < old_root->key){ //old_root is on the right
-                old_root->parent.lock()->right = old_root->left;
+        // if(new_root.lock() == nullptr){ //old_root is leaf
+        //     if(old_root->parent.lock()->key < old_root->key){ //old_root is on the right
+        //         old_root->parent.lock()->right = old_root->left;
+        //     }
+        //     else{ //old_root is on the left
+        //         old_root->parent.lock()->left = old_root->left;
+        //     }
+        // }
+        if(old_root->right == nullptr || old_root->left == nullptr){
+            if(old_root->right != nullptr){ //old root has only a right child
+                if(old_root->parent.lock()->key < old_root->key){ //old_root is on the right
+                    old_root->parent.lock()->right = old_root->right;
+                }
+                else if(old_root->key < old_root->parent.lock()->key){ //old_root is on the left
+                    old_root->parent.lock()->left = old_root->right;
+                }
+                else{//old root is the absolute root
+                    root = old_root->right;
+                    old_root->parent = old_root;
+                    new_root_old_parent = root;
+                }
             }
-            else{ //old_root is on the left
-                old_root->parent.lock()->left = old_root->left;
+            else if(old_root->left != nullptr){ //old_root only has a left child
+                if(old_root->parent.lock()->key < old_root->key){ //old_root is on the right
+                    old_root->parent.lock()->right = old_root->left;
+                }
+                else if(old_root->key < old_root->parent.lock()->key){ //old_root is on the left
+                    old_root->parent.lock()->left = old_root->left;
+                }
+                else{//old root is the absolute root
+                    root = old_root->left;
+                    old_root->parent = old_root;
+                }
+            }
+            else{ //old_root is a leaf - no children
+                if(old_root->parent.lock()->key < old_root->key){ //old_root is on the right
+                    old_root->parent.lock()->right = nullptr;
+                }
+                else if(old_root->key < old_root->parent.lock()->key){ //old_root is on the left
+                    old_root->parent.lock()->left = nullptr;
+                }
+                else{//old root is the absolute root
+                    clear(); //if we get here that means the node to be deleted is the only one in the tree
+                    return 0;
+                }
             }
         }
-        else{ //old_root isn't leaf
-            
+        else{ //old_root has both children
+             
             new_root_old_parent = new_root.lock()->parent;
-            
-            if(old_root->right->key == new_root.lock()->key)
-            {
-                //if the new root is the old root's right son
-                //we will not use new_root_old_parent in this case, only in the end when updating heights
-                new_root_old_parent = new_root.lock();
-            }
+
+            //update new_root left:
+            //we update it now so that we don't lose the whole left side if we removed the old_root from the absolute root
+            new_root.lock()->left = old_root->left;
+            old_root->left->parent = new_root;//the left is not supposed to be null otherwise we souldn't have entered this branch
                       
             //update root's parent
             new_root.lock()->parent = old_root->parent;
@@ -319,36 +360,51 @@ public:
                 old_root->parent.lock()->right = new_root.lock();
             }
             else if(old_root->parent.lock()->key == old_root->key){ // old_root is absolute root
-                //Do nothing
+                root = new_root.lock();
+                new_root.lock()->parent = new_root;
             }
             else{ //old_root is on the left
                 old_root->parent.lock()->left = new_root.lock();
             }
-            
-            if(old_root->key == old_root->parent.lock()->key){ //old_root is absolute root
-                root = new_root.lock();
-                new_root.lock()->parent = new_root;
-            }
 
-            //removing new_root from its parent
-            if(old_root->right->key != new_root.lock()->key)
+            if(old_root->right->key == new_root.lock()->key)
             {
-                new_root_old_parent.lock()->left = new_root.lock()->right;
+                //if the new root is the old root's right son
+                //this means that we just need to replace the old root with the new root and we'll be done
+                new_root_old_parent = new_root.lock();
             }
-            
-            //update new_root left and right
-            new_root.lock()->left = old_root->left;
-
-            if(old_root->left != nullptr)
-                old_root->left->parent = new_root;
-
-            //Update new_root right
-            if(old_root->right->key != new_root.lock()->key){
+            else{ //removing new_root from its parent
+                new_root_old_parent.lock()->left = new_root.lock()->right;
                 new_root.lock()->right = old_root->right;
                 if(old_root->right == nullptr)
                     throw std::runtime_error("right is null in remove");
                 old_root->right->parent = new_root;
             }
+            
+            // if(old_root->key == old_root->parent.lock()->key){ //old_root is absolute root
+            //     root = new_root.lock();
+            //     new_root.lock()->parent = new_root;
+            // }
+
+            // //removing new_root from its parent
+            // if(old_root->right->key != new_root.lock()->key)
+            // {
+            //     new_root_old_parent.lock()->left = new_root.lock()->right;
+            // }
+
+            // //update new_root left:
+            // new_root.lock()->left = old_root->left;
+            // // if(old_root->left != nullptr)
+            // //the left is not supposed to be null otherwise we souldn't have entered this branch
+            // old_root->left->parent = new_root;
+
+            // //Update new_root right son:
+            // if(old_root->right->key != new_root.lock()->key){
+            //     new_root.lock()->right = old_root->right;
+            //     if(old_root->right == nullptr)
+            //         throw std::runtime_error("right is null in remove");
+            //     old_root->right->parent = new_root;
+            // }
         }
 
         //update the heights in the מסלול הכנסה

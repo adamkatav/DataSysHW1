@@ -28,6 +28,7 @@ class EmployeeManager
     StatusType GetHighestEarnerInEachCompany(int NumOfCompanies, int **Employees);
     StatusType GetNumEmployeesMatching(int CompanyID, int MinEmployeeID, int MaxEmployeeId,
             int MinSalary, int MinGrade, int *TotalNumOfEmployees, int *NumOfEmployees);
+    void printEmployeesByID();
 };
 
 
