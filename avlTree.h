@@ -286,6 +286,8 @@ public:
             add_t(key, value, root);
         }
         size++;
+        // if(size==132)
+        //     print();
     }
     int remove(Key key){
         auto old_root = getNode(key).lock();
@@ -310,26 +312,30 @@ public:
             if(old_root->right != nullptr){ //old root has only a right child
                 if(old_root->parent.lock()->key < old_root->key){ //old_root is on the right
                     old_root->parent.lock()->right = old_root->right;
+                    old_root->parent.lock()->right->parent = old_root->parent;
                 }
                 else if(old_root->key < old_root->parent.lock()->key){ //old_root is on the left
                     old_root->parent.lock()->left = old_root->right;
+                    old_root->parent.lock()->left->parent = old_root->parent;
                 }
                 else{//old root is the absolute root
                     root = old_root->right;
-                    old_root->parent = old_root;
+                    root->parent = root;
                     new_root_old_parent = root;
                 }
             }
             else if(old_root->left != nullptr){ //old_root only has a left child
                 if(old_root->parent.lock()->key < old_root->key){ //old_root is on the right
                     old_root->parent.lock()->right = old_root->left;
+                    old_root->parent.lock()->right->parent = old_root->parent;
                 }
                 else if(old_root->key < old_root->parent.lock()->key){ //old_root is on the left
                     old_root->parent.lock()->left = old_root->left;
+                    old_root->parent.lock()->left->parent = old_root->parent;
                 }
                 else{//old root is the absolute root
                     root = old_root->left;
-                    old_root->parent = old_root;
+                    root->parent = root;
                 }
             }
             else{ //old_root is a leaf - no children
@@ -491,7 +497,7 @@ public:
         flattenTree_t(nodeArray.get(),count,root,desired_size,min,max);
         auto valueArray = std::unique_ptr<std::shared_ptr<Value>[]>(new std::shared_ptr<Value>[desired_size]);
         for(int i = 0; i < desired_size; i++){
-            *(valueArray[i]) = *(std::shared_ptr<Value>(nodeArray[i].value));
+            valueArray[i] = nodeArray[i].value;
         }
         return valueArray;
     }

@@ -12,6 +12,7 @@ class EmployeeKey
     EmployeeKey(int id, int salary);
     EmployeeKey();
     EmployeeKey(const EmployeeKey& emp) = default;
+    EmployeeKey& operator=(const EmployeeKey& emp) = default;
     bool operator<(const EmployeeKey& other_key);
     bool operator==(const EmployeeKey& other_key);
     bool operator!=(const EmployeeKey& other_key);
@@ -31,6 +32,7 @@ class Employee
 
     Employee(int id, int salary, int grade, std::weak_ptr<Company> employer);
     Employee(const Employee& emp) = default;
+    Employee& operator=(const Employee& emp) = default;
     void promote(int salary_increase, bool bump_grade);
 };
 
@@ -49,6 +51,7 @@ class Company
             std::shared_ptr<AVLTree<EmployeeKey, Employee, std::shared_ptr>> employees,
             std::shared_ptr<AVLTree<int, Employee, std::shared_ptr>> employees_by_id);
     Company(const Company& comp) = default;
+    Company& operator=(const Company& comp) = default;
 
     int getValue();
     void increaseValue(int amount);
