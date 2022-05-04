@@ -34,8 +34,6 @@ StatusType EmployeeManager::AddCompany(int CompanyID, int Value)
 
 StatusType EmployeeManager::AddEmployee(int EmployeeID, int CompanyID, int Salary, int Grade)
 {
-   auto EMPTY_COMP = empty_companies.get();
-   auto NON_EMPTY_COMP = non_empty_companies.get();
    if(EmployeeID<=0 || CompanyID<=0 || Salary<=0 || Grade<0)
       return INVALID_INPUT;
    std::weak_ptr<Company> company = empty_companies->getValue(CompanyID);
@@ -57,8 +55,8 @@ StatusType EmployeeManager::AddEmployee(int EmployeeID, int CompanyID, int Salar
 
    dummy->employees_by_id->add(EmployeeID,employee);
    dummy->employees_by_salary->add(current_key,employee); 
-   //check if the highest earner in dummy needs to be replaced
    dummy->highest_earner = dummy->employees_by_salary->getMax();
+   
    company.lock()->employees_by_salary->add(current_key,employee);
    company.lock()->employees_by_id->add(EmployeeID,employee);
    if(company.lock()->employees_by_salary->isEmpty())
@@ -96,12 +94,6 @@ StatusType EmployeeManager::RemoveEmployee(int EmployeeID)
       return FAILURE;
    EmployeeKey key = EmployeeKey(employee->id, employee->salary);
    auto Employer = employee->employer.lock();
-   dummy->employees_by_id->remove(EmployeeID); 
-   dummy->employees_by_salary->remove(key); 
-   if(!dummy->employees_by_salary->isEmpty())
-      dummy->highest_earner = dummy->employees_by_salary->getMax();
-   else
-      dummy->highest_earner = std::shared_ptr<Employee>();
    Employer->employees_by_id->remove(EmployeeID); 
    Employer->employees_by_salary->remove(key); 
    if(!Employer->employees_by_salary->isEmpty())
@@ -111,6 +103,12 @@ StatusType EmployeeManager::RemoveEmployee(int EmployeeID)
       non_empty_companies->remove(Employer->id);
       Employer->highest_earner = std::shared_ptr<Employee>();
    }
+   dummy->employees_by_id->remove(EmployeeID); 
+   dummy->employees_by_salary->remove(key); 
+   if(!dummy->employees_by_salary->isEmpty())
+      dummy->highest_earner = dummy->employees_by_salary->getMax();
+   else
+      dummy->highest_earner = std::shared_ptr<Employee>();
    return SUCCESS;
 }
 
@@ -132,8 +130,6 @@ StatusType EmployeeManager::GetCompanyInfo(int CompanyID, int *Value, int *NumEm
 
 StatusType EmployeeManager::GetEmployeeInfo(int EmployeeID, int *EmployerID, int *Salary, int *Grade)
 {
-   auto EMPTY_COMP = empty_companies.get();
-   auto NON_EMPTY_COMP = non_empty_companies.get();
    if (EmployeeID<=0 || EmployerID==nullptr || Salary==nullptr || Grade==nullptr)
       return INVALID_INPUT;
    std::weak_ptr<Employee> employee = dummy->employees_by_id->getValue(EmployeeID);
@@ -177,8 +173,8 @@ StatusType EmployeeManager::PromoteEmployee(int EmployeeID, int SalaryIncrease, 
    if (res1 == ALLOCATION_ERROR || res1==FAILURE)
       return res1;
    StatusType res2 = AddEmployee(EmployeeID, company_id, new_salary, new_grade);
-   if (res2 == ALLOCATION_ERROR)
-      return ALLOCATION_ERROR;
+   if (res2 == ALLOCATION_ERROR|| res2==FAILURE)
+      return res2;
    return SUCCESS;
 }
 
@@ -198,32 +194,11 @@ StatusType EmployeeManager::HireEmployee(int EmployeeID, int NewCompanyID)
       if ( new_company == nullptr )
          return FAILURE;
    }
-   EmployeeKey key = EmployeeKey(EmployeeID,employee->salary);
+   EmployeeKey key = EmployeeKey(EmployeeID,salary);
    //check if the employee already works at the new company:
-   if(new_company->employees_by_salary->getValue(key).lock() != nullptr)
+   if(new_company->employees_by_id->getValue(EmployeeID).lock() != nullptr)
       return FAILURE;
-   // //remove employee from old company:
-   // employee->employer.lock()->employees_by_salary->remove(key); //catch exception
-   // employee->employer.lock()->employees_by_id->remove(EmployeeID); //catch exception
-   // employee->employer.lock()->highest_earner = employee->employer.lock()->employees_by_salary->getMax();
-   // if(employee->employer.lock()->employees_by_id->isEmpty()){
-   //    empty_companies->add(employee->employer.lock()->id, employee->employer.lock());
-   //    non_empty_companies->remove(employee->employer.lock()->id);
-   // }
-   // if(new_company == nullptr)
-   //    throw std::runtime_error("employer was freed in HireEmployee");
-   // employee->employer = new_company;
-   // if(new_company->employees_by_id->isEmpty()){
-   //    non_empty_companies->add(new_company->id, new_company);
-   //    empty_companies->remove(new_company->id);
-   // }
-   // new_company->employees_by_salary->add(key,employee); //catch exception
-   // new_company->employees_by_id->add(EmployeeID,employee); //catch exception
-   // if(new_company->employees_by_salary->isEmpty())
-   //    throw std::runtime_error("new_company->employees_by_salary is empty in HireEmployee");
-   
-   // new_company->highest_earner =  new_company->employees_by_salary->getMax();
-   
+
    StatusType result1 = RemoveEmployee(EmployeeID);
    if(result1 == FAILURE)
       return FAILURE;
@@ -236,44 +211,68 @@ StatusType EmployeeManager::AcquireCompany(int AcquirerID, int TargetID, double 
 {
    if ( AcquirerID <= 0 || TargetID <= 0 || Factor < 1.00 || AcquirerID == TargetID )
       return INVALID_INPUT;
-   std::weak_ptr<Company> acquirer = empty_companies->getValue(AcquirerID);
-   if( acquirer.lock() == nullptr )
+   auto acquirer = empty_companies->getValue(AcquirerID).lock();
+   if( acquirer == nullptr )
    {
-      acquirer = non_empty_companies->getValue(AcquirerID);
-      if( acquirer.lock() == nullptr )
+      acquirer = non_empty_companies->getValue(AcquirerID).lock();
+      if( acquirer == nullptr )
          return FAILURE;
    }
-   std::weak_ptr<Company> target = empty_companies->getValue(TargetID);
-   if( target.lock() == nullptr )
+   auto target = empty_companies->getValue(TargetID).lock();
+   if( target == nullptr )
    {
-      target = non_empty_companies->getValue(TargetID);
-      if( target.lock() == nullptr )
+      target = non_empty_companies->getValue(TargetID).lock();
+      if( target == nullptr )
          return FAILURE;
    }
-   if (acquirer.lock()->getValue() < 10*(target.lock()->getValue()))
+   int target_value = target->getValue();
+   if (acquirer->getValue() < 10*(target_value))
       return FAILURE;
-   auto min_employee_id = target.lock()->employees_by_id->getMin()->id;
-   auto max_employee_id = target.lock()->employees_by_id->getMax()->id;
-   auto num_of_employees_in_target = target.lock()->employees_by_id->size;
-   auto target_employees_array = target.lock()->employees_by_id->flattenvaluesArray(num_of_employees_in_target, min_employee_id, max_employee_id);
+
+   if( target->employees_by_id->size==0)
+   {
+      empty_companies->remove(TargetID);
+      return SUCCESS;
+   }
+   auto min_employee_id = target->employees_by_id->getMin()->id;
+   auto max_employee_id = target->employees_by_id->getMax()->id;
+   auto num_of_employees_in_target = target->employees_by_id->size;
+   auto target_employees_array = target->employees_by_id->flattenvaluesArray(num_of_employees_in_target, min_employee_id, max_employee_id);
 
    for (int i = 0; i < num_of_employees_in_target; i++){
       target_employees_array[i]->employer = acquirer;
    }
-   
-
 
    //move the employees of target to the acquirer:
-   acquirer.lock()->employees_by_salary->addAVLTree(target.lock()->employees_by_salary); //catch exception
-   acquirer.lock()->employees_by_id->addAVLTree(target.lock()->employees_by_id); //catch exception
-   target.lock()->employees_by_salary->clear();
-   target.lock()->employees_by_id->clear();
-   acquirer.lock()->increaseValue(target.lock()->getValue());
+   acquirer->employees_by_salary->addAVLTree(target->employees_by_salary);
+   acquirer->employees_by_id->addAVLTree(target->employees_by_id); 
+   target->employees_by_salary->clear();
+   target->employees_by_id->clear();
+   if(non_empty_companies->getValue(TargetID).lock() != nullptr)
+      non_empty_companies->remove(TargetID);
+   else //the target is in empty companies
+      empty_companies->remove(TargetID);
+
+   //for each moved employee, change the employer to the acquring company:
+   EmployeeKey min_key = EmployeeKey(acquirer->employees_by_salary->getMin()->id, 
+                                    acquirer->employees_by_salary->getMin()->salary);
+   EmployeeKey max_key = EmployeeKey(acquirer->employees_by_salary->getMax()->id, 
+                                    acquirer->employees_by_salary->getMax()->salary);
+   int min_id = acquirer->employees_by_id->getMin()->id;
+   int max_id = acquirer->employees_by_id->getMax()->id;
+   int num_of_employees = acquirer->employees_by_salary->size;
+   auto salary_values = acquirer->employees_by_salary->flattenvaluesArray(num_of_employees, min_key, max_key);
+   auto id_values = acquirer->employees_by_id->flattenvaluesArray(num_of_employees,min_id,max_id);
+   for(int i = 0 ; i < num_of_employees ; i++)
+   {
+      salary_values[i]->employer = acquirer;
+      id_values[i]->employer = acquirer;
+   }
+   acquirer->increaseValue(target_value);
    double addition_factor = Factor - 1;
-   int addition = (int)floor(addition_factor * acquirer.lock()->getValue());
-   acquirer.lock()->increaseValue(addition);
-   StatusType res = RemoveCompany(TargetID);
-   return res; //should always return success
+   int addition = (int)floor(addition_factor * acquirer->getValue());
+   acquirer->increaseValue(addition);
+   return SUCCESS; //should always return success
 }
 
 StatusType EmployeeManager::GetHighestEarner(int CompanyID, int *EmployeeID)
@@ -378,11 +377,12 @@ StatusType EmployeeManager::GetNumEmployeesMatching(int CompanyID, int MinEmploy
       company = non_empty_companies->getValue(CompanyID);
       if ( company.lock() == nullptr )
          return FAILURE;
-      auto employee_arr = company.lock()->employees_by_id->flattenvaluesArray(company.lock()->employees_by_id->size, MinEmployeeID, MaxEmployeeId);
+      int counter = company.lock()->employees_by_id->size;
+      auto employee_arr = company.lock()->employees_by_id->flattenvaluesArray(counter, MinEmployeeID, MaxEmployeeId);
       int i = 0;
       *TotalNumOfEmployees = 0;
       *NumOfEmployees = 0;
-      while (employee_arr[i]->id <= MaxEmployeeId)
+      while (employee_arr[i] != nullptr)
       {
          (*TotalNumOfEmployees)++;
          if ( employee_arr[i]->salary>=MinSalary && employee_arr[i]->grade>=MinGrade)

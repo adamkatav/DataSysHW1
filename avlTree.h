@@ -249,19 +249,24 @@ private:
         }
 
         flattenTree_t(nodeArray,i,root.lock()->left,max_num, min, max);
+        
+        if(i==max_num)
+            return;
         nodeArray[i] = *(root.lock());
         i++;
         flattenTree_t(nodeArray,i,root.lock()->right,max_num, min, max);
     }
 
-    void addAVLTree_t(std::unique_ptr<AVLNode<Key, Value, Ptr>[]>& node_arr, int s, int e, std::shared_ptr<AVLNode<Key, Value, Ptr>> new_node, std::shared_ptr<AVLNode<Key, Value, Ptr>> parent){
+    std::shared_ptr<AVLNode<Key, Value, Ptr>> addAVLTree_t(std::unique_ptr<AVLNode<Key, Value, Ptr>[]>& node_arr, int s, int e, std::shared_ptr<AVLNode<Key, Value, Ptr>> new_node, std::shared_ptr<AVLNode<Key, Value, Ptr>> parent){
         if(s > e){
-            return;
+            return nullptr;
         }
         int m = (s + e)/2;
         new_node = AVLNode<Key, Value, Ptr>::createAVLNode((node_arr)[m].key, (node_arr)[m].value, nullptr, nullptr, parent);
-        addAVLTree_t(node_arr, s, m-1, new_node->left, new_node);
-        addAVLTree_t(node_arr, m+1, e, new_node->right, new_node);
+        new_node->parent = parent;
+        new_node->left = addAVLTree_t(node_arr, s, m-1, new_node->left, new_node);
+        new_node->right = addAVLTree_t(node_arr, m+1, e, new_node->right, new_node);
+        return new_node;
     }
     std::unique_ptr<AVLNode<Key, Value, Ptr>[]> flattenTree(){
         std::unique_ptr<AVLNode<Key, Value, Ptr>[]> nodeArray(new AVLNode<Key, Value, Ptr>[size]);
@@ -294,20 +299,10 @@ public:
         if(old_root == nullptr){
             throw std::runtime_error("key doesn't exist in remove");
         }
-        // if(size == 1){
-        //     clear();
-        //     return 0;
-        // }
+
         auto new_root = getMin_t(old_root->right);
         auto new_root_old_parent = old_root->parent;
-        // if(new_root.lock() == nullptr){ //old_root is leaf
-        //     if(old_root->parent.lock()->key < old_root->key){ //old_root is on the right
-        //         old_root->parent.lock()->right = old_root->left;
-        //     }
-        //     else{ //old_root is on the left
-        //         old_root->parent.lock()->left = old_root->left;
-        //     }
-        // }
+
         if(old_root->right == nullptr || old_root->left == nullptr){
             if(old_root->right != nullptr){ //old root has only a right child
                 if(old_root->parent.lock()->key < old_root->key){ //old_root is on the right
@@ -387,30 +382,6 @@ public:
                 old_root->right->parent = new_root;
             }
             
-            // if(old_root->key == old_root->parent.lock()->key){ //old_root is absolute root
-            //     root = new_root.lock();
-            //     new_root.lock()->parent = new_root;
-            // }
-
-            // //removing new_root from its parent
-            // if(old_root->right->key != new_root.lock()->key)
-            // {
-            //     new_root_old_parent.lock()->left = new_root.lock()->right;
-            // }
-
-            // //update new_root left:
-            // new_root.lock()->left = old_root->left;
-            // // if(old_root->left != nullptr)
-            // //the left is not supposed to be null otherwise we souldn't have entered this branch
-            // old_root->left->parent = new_root;
-
-            // //Update new_root right son:
-            // if(old_root->right->key != new_root.lock()->key){
-            //     new_root.lock()->right = old_root->right;
-            //     if(old_root->right == nullptr)
-            //         throw std::runtime_error("right is null in remove");
-            //     old_root->right->parent = new_root;
-            // }
         }
 
         //update the heights in the מסלול הכנסה
@@ -433,11 +404,24 @@ public:
         //print();
         return 0;
     }
+
+    void updateHeights(std::shared_ptr<AVLNode<Key, Value, Ptr>> current_root)
+    {
+        if(current_root==nullptr)
+            return;
+        updateHeights(current_root->left);
+        updateHeights(current_root->right);
+        current_root->height = max(AVLNode<Key, Value, Ptr>::getHeight(current_root->left), 
+                                    AVLNode<Key, Value, Ptr>::getHeight(current_root->right)) + 1;
+    }
+
+
+
     void addAVLTree(std::weak_ptr<AVLTree<Key, Value, Ptr>> other_tree){
-        AVLNode<Key, Value, std::weak_ptr> a;
         std::unique_ptr<AVLNode<Key, Value, Ptr>[]> nodeArray(new AVLNode<Key, Value, Ptr>[size + other_tree.lock()->size]);
         int nodeArray_size = sortedArrayOfThisAndAnotherTree(nodeArray, other_tree);
-        addAVLTree_t(nodeArray, 0, nodeArray_size-1, root, root);
+        root = addAVLTree_t(nodeArray, 0, nodeArray_size-1, root, root);
+        updateHeights(root);
         size += other_tree.lock()->size;
     }
 
@@ -456,7 +440,7 @@ public:
     std::shared_ptr<Value> getMin(){
         if(isEmpty())
             return std::shared_ptr<Value>();
-        return std::shared_ptr<Value>(getMax_t(root).lock()->value);
+        return std::shared_ptr<Value>(getMin_t(root).lock()->value);
     }
 
     std::weak_ptr<AVLNode<Key, Value, Ptr>> getMax_t(std::shared_ptr<AVLNode<Key, Value, Ptr>> root){
@@ -475,9 +459,7 @@ public:
         //return std::make_shared<Value>(getMax_t(root).lock()->value);
         if(isEmpty())
             return std::shared_ptr<Value>();
-        auto REMOVE_ON_SIGHT = getMax_t(root).lock()->value;
-
-        return std::shared_ptr<Value>(REMOVE_ON_SIGHT);
+        return std::shared_ptr<Value>(getMax_t(root).lock()->value);
     }
 
     std::unique_ptr<Key[]> flattenKeysArray(){
@@ -488,7 +470,6 @@ public:
         }
         return keyArray;
     }
-
 
 
     std::unique_ptr<std::shared_ptr<Value>[]> flattenvaluesArray(int desired_size, Key min, Key max){
