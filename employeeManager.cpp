@@ -94,6 +94,8 @@ StatusType EmployeeManager::RemoveEmployee(int EmployeeID)
       return FAILURE;
    EmployeeKey key = EmployeeKey(employee->id, employee->salary);
    auto Employer = employee->employer.lock();
+   if(Employer->employees_by_id->getValue(EmployeeID).lock()==nullptr)
+      throw std::runtime_error("employee not in employer in RemoveEmployee");
    Employer->employees_by_id->remove(EmployeeID); 
    Employer->employees_by_salary->remove(key); 
    if(!Employer->employees_by_salary->isEmpty())
@@ -164,17 +166,32 @@ StatusType EmployeeManager::PromoteEmployee(int EmployeeID, int SalaryIncrease, 
    std::shared_ptr<Employee> employee = dummy->employees_by_id->getValue(EmployeeID).lock();
    if( employee == nullptr )
       return FAILURE;
-   int new_salary = employee->salary + SalaryIncrease;
+   int old_salary = employee->salary;
+   int new_salary = old_salary  + SalaryIncrease;
    int new_grade = employee->grade;
    if(BumpGrade>0)
       new_grade++;
-   int company_id = employee->employer.lock()->id;
-   StatusType res1 = RemoveEmployee(EmployeeID);
-   if (res1 == ALLOCATION_ERROR || res1==FAILURE)
-      return res1;
-   StatusType res2 = AddEmployee(EmployeeID, company_id, new_salary, new_grade);
-   if (res2 == ALLOCATION_ERROR|| res2==FAILURE)
-      return res2;
+   auto company = employee->employer.lock();
+   int company_id = company->id;
+   company->employees_by_salary->remove(EmployeeKey(EmployeeID,old_salary));
+   auto new_employee = std::make_shared<Employee>(Employee(EmployeeID,new_salary,new_grade,company));
+   if (employee==nullptr)
+      return ALLOCATION_ERROR;
+   company->employees_by_salary->add(EmployeeKey(EmployeeID,new_salary),new_employee);
+   company->employees_by_id->remove(EmployeeID);
+   company->employees_by_id->add(EmployeeID,new_employee);
+   company->highest_earner = company->employees_by_salary->getMax();
+   dummy->employees_by_salary->remove(EmployeeKey(EmployeeID,old_salary));
+   dummy->employees_by_salary->add(EmployeeKey(EmployeeID,new_salary),new_employee);
+   dummy->employees_by_id->remove(EmployeeID);
+   dummy->employees_by_id->add(EmployeeID,new_employee);
+   dummy->highest_earner = dummy->employees_by_salary->getMax();
+   // StatusType res1 = RemoveEmployee(EmployeeID);
+   // if (res1 == ALLOCATION_ERROR || res1==FAILURE)
+   //    return res1;
+   // StatusType res2 = AddEmployee(EmployeeID, company_id, new_salary, new_grade);
+   // if (res2 == ALLOCATION_ERROR|| res2==FAILURE)
+   //    return res2;
    return SUCCESS;
 }
 
@@ -234,14 +251,14 @@ StatusType EmployeeManager::AcquireCompany(int AcquirerID, int TargetID, double 
       empty_companies->remove(TargetID);
       return SUCCESS;
    }
-   auto min_employee_id = target->employees_by_id->getMin()->id;
-   auto max_employee_id = target->employees_by_id->getMax()->id;
-   auto num_of_employees_in_target = target->employees_by_id->size;
-   auto target_employees_array = target->employees_by_id->flattenvaluesArray(num_of_employees_in_target, min_employee_id, max_employee_id);
+   // auto min_employee_id = target->employees_by_id->getMin()->id;
+   // auto max_employee_id = target->employees_by_id->getMax()->id;
+   // auto num_of_employees_in_target = target->employees_by_id->size;
+   // auto target_employees_array = target->employees_by_id->flattenvaluesArray(num_of_employees_in_target, min_employee_id, max_employee_id);
 
-   for (int i = 0; i < num_of_employees_in_target; i++){
-      target_employees_array[i]->employer = acquirer;
-   }
+   // for (int i = 0; i < num_of_employees_in_target; i++){
+   //    target_employees_array[i]->employer = acquirer;
+   // }
 
    //move the employees of target to the acquirer:
    acquirer->employees_by_salary->addAVLTree(target->employees_by_salary);
@@ -250,14 +267,12 @@ StatusType EmployeeManager::AcquireCompany(int AcquirerID, int TargetID, double 
    target->employees_by_id->clear();
    if(non_empty_companies->getValue(TargetID).lock() != nullptr)
       non_empty_companies->remove(TargetID);
-   else //the target is in empty companies
+   else //the target is in empty companies- this isn't possible but we'll check it anyway
       empty_companies->remove(TargetID);
 
    //for each moved employee, change the employer to the acquring company:
-   EmployeeKey min_key = EmployeeKey(acquirer->employees_by_salary->getMin()->id, 
-                                    acquirer->employees_by_salary->getMin()->salary);
-   EmployeeKey max_key = EmployeeKey(acquirer->employees_by_salary->getMax()->id, 
-                                    acquirer->employees_by_salary->getMax()->salary);
+   EmployeeKey min_key = EmployeeKey(acquirer->employees_by_salary->getMin()->id, acquirer->employees_by_salary->getMin()->salary);
+   EmployeeKey max_key = EmployeeKey(acquirer->employees_by_salary->getMax()->id, acquirer->employees_by_salary->getMax()->salary);
    int min_id = acquirer->employees_by_id->getMin()->id;
    int max_id = acquirer->employees_by_id->getMax()->id;
    int num_of_employees = acquirer->employees_by_salary->size;

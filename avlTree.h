@@ -150,7 +150,7 @@ private:
                 return rotateLeft(parent.lock());
             }
         }
-        if (parent.lock()->parent.lock()->key != parent.lock()->key)
+        if (root->key != parent.lock()->key)
             rotate(parent.lock()->parent);
         return parent;
     }
@@ -229,32 +229,30 @@ private:
         return total_size;
     }
 
-    void flattenTree_t(AVLNode<Key, Value, Ptr>* nodeArray, int& i, std::weak_ptr<AVLNode<Key, Value, Ptr>> root, int max_num, Key min, Key max){
+    int flattenTree_t(AVLNode<Key, Value, Ptr>* nodeArray, int& i, std::weak_ptr<AVLNode<Key, Value, Ptr>> root, int max_num, Key min, Key max){
         if(root.lock() == nullptr){
-            return;
+            return i;
         }
-        if (i == max_num)
+        if (i >= max_num)
         {
-            return;
+            return i;
         }
         if (root.lock()->key < min)
         {
-            flattenTree_t(nodeArray,i,root.lock()->right,max_num, min, max);
-            return;
+            return flattenTree_t(nodeArray,i,root.lock()->right,max_num, min, max);
         }
         if (max < root.lock()->key)
         {
-            flattenTree_t(nodeArray,i,root.lock()->left,max_num, min, max);
-            return;
+            return flattenTree_t(nodeArray,i,root.lock()->left,max_num, min, max);
         }
 
-        flattenTree_t(nodeArray,i,root.lock()->left,max_num, min, max);
+        i = flattenTree_t(nodeArray,i,root.lock()->left,max_num, min, max);
         
-        if(i==max_num)
-            return;
-        nodeArray[i] = *(root.lock());
-        i++;
-        flattenTree_t(nodeArray,i,root.lock()->right,max_num, min, max);
+        if(i>=max_num)
+            return i;
+        nodeArray[i++] = *(root.lock());
+        //i++;
+        return flattenTree_t(nodeArray,i,root.lock()->right,max_num, min, max);
     }
 
     std::shared_ptr<AVLNode<Key, Value, Ptr>> addAVLTree_t(std::unique_ptr<AVLNode<Key, Value, Ptr>[]>& node_arr, int s, int e, std::shared_ptr<AVLNode<Key, Value, Ptr>> new_node, std::shared_ptr<AVLNode<Key, Value, Ptr>> parent){
@@ -386,7 +384,8 @@ public:
 
         //update the heights in the מסלול הכנסה
         auto temp = new_root_old_parent.lock();
-        while (temp->key != temp->parent.lock()->key){
+        //while (temp->key != temp->parent.lock()->key){
+        while (temp->key != root->key){
             temp->height = max(AVLNode<Key, Value, Ptr>::getHeight(temp->left), AVLNode<Key, Value, Ptr>::getHeight(temp->right)) + 1;
             temp = temp->parent.lock();
         }
@@ -394,7 +393,7 @@ public:
         //update root's height
         temp->height = max(AVLNode<Key, Value, Ptr>::getHeight(temp->left), AVLNode<Key, Value, Ptr>::getHeight(temp->right)) + 1;
         //rotate 
-        while (new_root_old_parent.lock()->key != new_root_old_parent.lock()->parent.lock()->key){
+        while (new_root_old_parent.lock()->key != root->key){
             auto new_root_old_parent_parent = new_root_old_parent.lock()->parent;
             rotate(new_root_old_parent);
             new_root_old_parent = new_root_old_parent_parent;
@@ -429,9 +428,7 @@ public:
         if(root == nullptr)
             return std::shared_ptr<AVLNode<Key, Value, Ptr>>();
         auto temp = root;
-        //auto prev = temp;
         while(temp->left != nullptr){
-        //    prev = temp;
             temp = temp->left;
         }
         return temp;
@@ -447,16 +444,13 @@ public:
         if(root == nullptr)
             return std::shared_ptr<AVLNode<Key, Value, Ptr>>();
         auto temp = root;
-        //auto prev = temp;
         while(temp->right != nullptr){
-        //    prev = temp;
             temp = temp->right;
         }
         return temp;
     }
     
     std::shared_ptr<Value> getMax(){
-        //return std::make_shared<Value>(getMax_t(root).lock()->value);
         if(isEmpty())
             return std::shared_ptr<Value>();
         return std::shared_ptr<Value>(getMax_t(root).lock()->value);
@@ -466,7 +460,7 @@ public:
         auto nodeArray = flattenTree();
         std::unique_ptr<Key[]> keyArray = std::unique_ptr<Key[]>(new Key[size]);
         for(int i = 0; i < size; i++){
-            (keyArray)[i] = (nodeArray)[i].key;
+            keyArray[i] = nodeArray[i].key;
         }
         return keyArray;
     }
