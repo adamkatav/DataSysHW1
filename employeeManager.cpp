@@ -46,7 +46,7 @@ StatusType EmployeeManager::AddEmployee(int EmployeeID, int CompanyID, int Salar
       return FAILURE;
 
    if(company.lock() == nullptr)
-      throw std::runtime_error("employer was freed in AddEmployee");
+      //throw std::runtime_error("employer was freed in AddEmployee");
 
    employee = std::make_shared<Employee>(Employee(EmployeeID,Salary,Grade,company.lock()));
    if (employee==nullptr)
@@ -60,7 +60,7 @@ StatusType EmployeeManager::AddEmployee(int EmployeeID, int CompanyID, int Salar
    company.lock()->employees_by_salary->add(current_key,employee);
    company.lock()->employees_by_id->add(EmployeeID,employee);
    if(company.lock()->employees_by_salary->isEmpty())
-      throw std::runtime_error("employees_by_salary is empty in AddingEmployee");
+      //throw std::runtime_error("employees_by_salary is empty in AddingEmployee");
    company.lock()->highest_earner = company.lock()->employees_by_salary->getMax(); //update the highest earner
    
    //check if this is the company's only worker
@@ -80,7 +80,7 @@ StatusType EmployeeManager::RemoveCompany(int CompanyID)
    if(company.lock() == nullptr)
       return FAILURE;
    if(!company.lock()->employees_by_salary->isEmpty())
-      throw std::runtime_error("Company is empty but has employees");
+      //throw std::runtime_error("Company is empty but has employees");
    empty_companies->remove(CompanyID); 
    return SUCCESS;
 }
@@ -95,7 +95,7 @@ StatusType EmployeeManager::RemoveEmployee(int EmployeeID)
    EmployeeKey key = EmployeeKey(employee->id, employee->salary);
    auto Employer = employee->employer.lock();
    if(Employer->employees_by_id->getValue(EmployeeID).lock()==nullptr)
-      throw std::runtime_error("employee not in employer in RemoveEmployee");
+      //throw std::runtime_error("employee not in employer in RemoveEmployee");
    Employer->employees_by_id->remove(EmployeeID); 
    Employer->employees_by_salary->remove(key); 
    if(!Employer->employees_by_salary->isEmpty())

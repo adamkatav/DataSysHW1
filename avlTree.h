@@ -69,8 +69,9 @@ private:
         }
         else{
             auto REMOVE_ON_SIGHT = x->parent.lock();
-            if(REMOVE_ON_SIGHT==nullptr)
-                throw std::runtime_error("parent is null in rotate");
+            if(REMOVE_ON_SIGHT==nullptr){
+                //throw std::runtime_error("parent is null in rotate");
+            }
             if(REMOVE_ON_SIGHT->right != nullptr && REMOVE_ON_SIGHT->right->key == x->key){
                 REMOVE_ON_SIGHT->right = y;
             }
@@ -279,7 +280,8 @@ public:
     void add(Key key, std::shared_ptr<Value> value)
     {
         if (getValue(key).lock() != nullptr){
-            throw std::runtime_error("Key already exist");
+            //throw std::runtime_error("Key already exist");
+            return;
         }
         if (isEmpty()){
             root = AVLNode<Key, Value, Ptr>::createAVLNode(key, value, nullptr, nullptr, root);
@@ -295,7 +297,8 @@ public:
     int remove(Key key){
         auto old_root = getNode(key).lock();
         if(old_root == nullptr){
-            throw std::runtime_error("key doesn't exist in remove");
+            return 0;
+            //throw std::runtime_error("key doesn't exist in remove");
         }
 
         auto new_root = getMin_t(old_root->right);
@@ -375,8 +378,9 @@ public:
             else{ //removing new_root from its parent
                 new_root_old_parent.lock()->left = new_root.lock()->right;
                 new_root.lock()->right = old_root->right;
-                if(old_root->right == nullptr)
-                    throw std::runtime_error("right is null in remove");
+                if(old_root->right == nullptr){
+                    //throw std::runtime_error("right is null in remove");
+                }
                 old_root->right->parent = new_root;
             }
             
